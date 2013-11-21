@@ -5,8 +5,8 @@ struct pcsc_atr_info {
 
 	enum mifare_tag_type type;
 	int len;
-	unsigned char* tag;
-	unsigned char* mask;
+	char* tag;
+	char* mask;
 
 };
 
