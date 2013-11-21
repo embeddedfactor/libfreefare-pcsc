@@ -160,7 +160,7 @@ freefare_tag_new_pcsc (struct pcsc_context *context, const char *reader)
 	    /* bitmask case */
 	    int c;
 	    for (c = 0; c < pcsc_supported_atrs[i].len; c++){
-		if (pcsc_supported_atrs[i].tag[c] & pcsc_supported_atrs[i].mask[c] != pbAttr[c] & pcsc_supported_atrs[i].mask[c]){
+		if((pcsc_supported_atrs[i].tag[c] & pcsc_supported_atrs[i].mask[c]) != (pbAttr[c] & pcsc_supported_atrs[i].mask[c])){
 		    break;
 		}
 	    }
@@ -466,7 +466,9 @@ void
 pcsc_exit(struct pcsc_context* context)
 {
 	if (context->readers)
+    #ifndef __APPLE__
 		SCardFreeMemory(context->context, context->readers);
+    #endif
 	SCardReleaseContext(context->context);
 }
 
@@ -487,19 +489,19 @@ pcsc_list_devices(struct pcsc_context* context, LPSTR *string)
     if (!str)
     {
     	context->readers = NULL;
-	*string = empty;
+	    *string = empty;
     	return SCARD_E_NO_MEMORY;
     }
     err = SCardListReaders(context->context, NULL, str, &size);
     if (err != SCARD_S_SUCCESS)
     {
-	context->readers = NULL;
-	*string = empty;
+      context->readers = NULL;
+      *string = empty;
     }
     else
     {
-	*string = str;
-	context->readers = str;
+      *string = str;
+      context->readers = str;
     }
     return err;
 }
