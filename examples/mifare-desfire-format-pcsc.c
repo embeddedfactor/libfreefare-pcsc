@@ -25,9 +25,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <nfc/nfc.h>
-
-#include <freefare.h>
+#include <freefare_pcsc.h>
 
 uint8_t key_data_picc[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 

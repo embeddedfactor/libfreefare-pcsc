@@ -41,9 +41,7 @@
 #include <strings.h>
 #include <unistd.h>
 
-#include <nfc/nfc.h>
-
-#include <freefare.h>
+#include <freefare_pcsc.h>
 
 #define MIN(a,b) ((a < b) ? a: b)
 
@@ -115,7 +113,7 @@ main(int argc, char *argv[])
     }
 
     // 
-    nfc_connstring devices[8];
+    //nfc_connstring devices[8];
     size_t device_count;
 
     struct pcsc_context *context;

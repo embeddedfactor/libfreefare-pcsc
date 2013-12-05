@@ -53,6 +53,9 @@
 #include <string.h>
 
 #include <freefare.h>
+#ifdef HAVE_PCSC
+#include "freefare_pcsc.h"
+#endif
 #include "freefare_internal.h"
 
 // Theorically, it should be an uint24_t ...

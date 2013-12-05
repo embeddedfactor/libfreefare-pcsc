@@ -24,7 +24,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <freefare.h>
+#include <freefare_pcsc.h>
 
 /*
  * This example was written based on information provided by the

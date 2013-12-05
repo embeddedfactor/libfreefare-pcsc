@@ -20,12 +20,23 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "config.h"
+
+#ifdef HAVE_LIBNFC
+#include <nfc/nfc.h>
+#endif
 #include <freefare.h>
+#ifdef HAVE_PCSC
+#include "freefare_pcsc.h"
+#endif
+
 #include <reader.h>
 
 #include "freefare_internal.h"
 
+#ifdef HAVE_PCSC
 #include "freefare_pcsc_tags.h"
+#endif
 
 #define MAX_CANDIDATES 16
 
@@ -41,6 +52,7 @@ struct supported_tag supported_tags[] = {
     { ULTRALIGHT,   "Mifare UltraLight",            0x00, 0, 0, { 0x00 }, NULL },
 };
 
+#ifdef HAVE_LIBNFC
 /*
  * Automagically allocate a MifareTag given a device and target info.
  */
@@ -98,7 +110,8 @@ freefare_tag_new (nfc_device *device, nfc_iso14443a_info nai)
 
     return tag;
 }
-
+#endif
+#ifdef HAVE_PCSC
 MifareTag
 freefare_tag_new_pcsc (struct pcsc_context *context, const char *reader)
 {
@@ -221,9 +234,11 @@ freefare_tag_new_pcsc (struct pcsc_context *context, const char *reader)
      * Initialize common fields
      * (Target specific fields are initialized in mifare_*_tag_new())
      */
+#ifdef HAVE_LIBNFC
     memcpy(tag->info.abtUid, ret, retlen - 2);
     tag->info.szUidLen = retlen - 2;
     tag->device = NULL;
+#endif
     tag->hContext = context->context;
     tag->hCard = hCard;
     tag->active = 0;
@@ -234,7 +249,7 @@ freefare_tag_new_pcsc (struct pcsc_context *context, const char *reader)
 
     return tag;
 }
-
+#endif
 /*
  * MIFARE card common functions
  *
@@ -242,7 +257,7 @@ freefare_tag_new_pcsc (struct pcsc_context *context, const char *reader)
  * communication with a MIFARE card, and perform required cleannups after using
  * the targets.
  */
-
+#ifdef HAVE_LIBNFC
 /*
  * Get a list of the MIFARE targets near to the provided NFC initiator.
  *
@@ -297,7 +312,8 @@ freefare_get_tags (nfc_device *device)
 
     return tags;
 }
-
+#endif
+#ifdef HAVE_PCSC
 /*
  * Get a list of the MIFARE targets near to the provided NFC initiator.
  * (Usally its just one tag, because pcsc can not detect more)
@@ -323,7 +339,7 @@ freefare_get_tags_pcsc (struct pcsc_context *context, const char *reader)
 
     return tags;
 }
-
+#endif
 /*
  * Returns the type of the provided tag.
  */
@@ -383,7 +399,10 @@ const char *
 freefare_strerror (MifareTag tag)
 {
     const char *p = "Unknown error";
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
     if(tag->device != NULL) // we use libnfc
+#endif
+#ifdef HAVE_LIBNFC
     {
 	if (nfc_device_get_last_error (tag->device) < 0) {
 	    p = nfc_strerror (tag->device);
@@ -397,7 +416,11 @@ freefare_strerror (MifareTag tag)
 	    }
 	}
     }
+#endif
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
     else // we use the pcsc protocol
+#endif
+#ifdef HAVE_PCSC
     {
 	if (tag->lastPCSCerror != 0){
 	    p = (const char*) pcsc_stringify_error(tag->lastPCSCerror);
@@ -412,6 +435,7 @@ freefare_strerror (MifareTag tag)
 	    }   
 	}
     }
+#endif
     return p;
 }
 
@@ -444,7 +468,7 @@ freefare_free_tags (MifareTag *tags)
 /*
  * create context for pcsc readers
  */
-
+#ifdef HAVE_PCSC
 void
 pcsc_init(struct pcsc_context** context)
 {
@@ -505,7 +529,7 @@ pcsc_list_devices(struct pcsc_context* context, LPSTR *string)
     }
     return err;
 }
-
+#endif
 /*
  * Low-level API
  */

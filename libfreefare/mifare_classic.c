@@ -68,8 +68,12 @@
 #ifdef WITH_DEBUG
 #  include <libutil.h>
 #endif
-
+#ifdef HAVE_LIBNFC
 #include <freefare.h>
+#endif
+#ifdef HAVE_PCSC
+#include "freefare_pcsc.h"
+#endif
 #include "freefare_internal.h"
 
 #define MC_OK             0x0A
@@ -85,6 +89,7 @@
 
 #define CLASSIC_TRANSCEIVE(tag, msg, res) CLASSIC_TRANSCEIVE_EX(tag, msg, res, 0)
 
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
 #define CLASSIC_TRANSCEIVE_EX(tag, msg, res, disconnect) \
     do { \
 	errno = 0; \
@@ -118,6 +123,51 @@
 	__##res##_n = _res; \
 	DEBUG_XFER (res, __##res##_n, "<=== "); \
     } while (0)
+
+#elif HAVE_LIBNFC
+#define CLASSIC_TRANSCEIVE_EX(tag, msg, res, disconnect) \
+    do { \
+	errno = 0; \
+	DEBUG_XFER (msg, __##msg##_n, "===> "); \
+	int _res; \
+	{ \
+	    if ((_res = nfc_initiator_transceive_bytes (tag->device, msg, __##msg##_n, res, __##res##_size, 0)) < 0)  \
+	    { \
+	    	if (disconnect) \
+		{ \
+		    tag->active = false; \
+	    	} \
+	        return errno = EIO, -1; \
+	    } \
+	} \
+	__##res##_n = _res; \
+	DEBUG_XFER (res, __##res##_n, "<=== "); \
+    } while (0)
+
+#else
+#define CLASSIC_TRANSCEIVE_EX(tag, msg, res, disconnect) \
+    do { \
+	errno = 0; \
+	DEBUG_XFER (msg, __##msg##_n, "===> "); \
+	int _res; \
+	{ \
+	    SCARD_IO_REQUEST __pcsc_rcv_pci; \
+	    DWORD __pcsc_recv_len = __##res##_size; \
+	    if (SCARD_S_SUCCESS != SCardTransmit(tag->hCard, SCARD_PCI_T0, msg, __##msg##_n, &__pcsc_rcv_pci, (LPBYTE)&_res, &__pcsc_recv_len)) \
+	    { \
+	    	if (disconnect) \
+		{ \
+		    tag->active = false; \
+	    	} \
+		return errno = EIO, -1; \
+	    } \
+	    _res = __pcsc_recv_len; \
+	} \
+	__##res##_n = _res; \
+	DEBUG_XFER (res, __##res##_n, "<=== "); \
+    } while (0)
+
+#endif
 
 
 /* Public Key A value of NFC Forum sectors */
@@ -249,7 +299,10 @@ mifare_classic_connect (MifareTag tag)
     ASSERT_INACTIVE (tag);
     ASSERT_MIFARE_CLASSIC (tag);
 
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
     if(NULL != tag->device) // nfc way
+#endif
+#ifdef HAVE_LIBNFC
     {
 	nfc_target pnti;
 	nfc_modulation modulation = {
@@ -263,7 +316,11 @@ mifare_classic_connect (MifareTag tag)
 	    return -1;
 	}
     }
+#endif
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
     else // pcsc way
+#endif
+#ifdef HAVE_PCSC
     {
 	DWORD	dwActiveProtocol;
 	tag->lastPCSCerror = SCardConnect(tag->hContext, tag->szReader, SCARD_SHARE_SHARED, 
@@ -276,6 +333,7 @@ mifare_classic_connect (MifareTag tag)
 	tag->active = 1;
 
     }
+#endif
     return 0;
 }
 
@@ -288,7 +346,10 @@ mifare_classic_disconnect (MifareTag tag)
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_CLASSIC (tag);
 
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
     if(NULL != tag->device) // nfclib way
+#endif
+#ifdef HAVE_LIBNFC
     {
 	if (nfc_initiator_deselect_target (tag->device) >= 0) {
 	    tag->active = 0;
@@ -297,7 +358,11 @@ mifare_classic_disconnect (MifareTag tag)
 	    return -1;
 	}
     }
+#endif
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
     else // pcsc way
+#endif
+#ifdef HAVE_PCSC
     {
 	tag->lastPCSCerror = SCardDisconnect(tag->hCard, SCARD_LEAVE_CARD);
 	if(SCARD_S_SUCCESS == tag->lastPCSCerror) 
@@ -309,6 +374,7 @@ mifare_classic_disconnect (MifareTag tag)
 	    return -1;
 	}
     }
+#endif
 
     return 0;
 }

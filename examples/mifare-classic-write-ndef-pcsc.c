@@ -26,9 +26,7 @@
 #include <strings.h>
 #include <unistd.h>
 
-#include <nfc/nfc.h>
-
-#include <freefare.h>
+#include <freefare_pcsc.h>
 
 #define MIN(a,b) ((a < b) ? a: b)
 
@@ -112,12 +110,10 @@ fix_mad_trailer_block (MifareTag tag, MifareClassicSectorNumber sector, MifareCl
     MifareClassicBlock block;
     mifare_classic_trailer_block (&block, mad_public_key_a, 0x0, 0x1, 0x1, 0x6, 0x00, default_keyb);
     if (mifare_classic_authenticate (tag, mifare_classic_sector_last_block (sector), key, key_type) < 0) {
-	//nfc_perror (device, "fix_mad_trailer_block mifare_classic_authenticate");
 	printf("fix_mad_trailer_block mifare_classic_authenticate\n");
 	return -1;
     }
     if (mifare_classic_write (tag, mifare_classic_sector_last_block (sector), block) < 0) {
-	//nfc_perror (device, "mifare_classic_write");
 	printf("mifare_classic_write");
 	return -1;
     }
@@ -139,7 +135,6 @@ main(int argc, char *argv[])
     int error = 0;
     MifareTag *tags = NULL;
 	// FIXME:
-	nfc_device *device = NULL;
     Mad mad;
     MifareClassicKey transport_key = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
@@ -315,12 +310,12 @@ main(int argc, char *argv[])
 		    if (sectors) {
 			while (*p) {
 			    if (mifare_classic_authenticate (tags[i], mifare_classic_sector_last_block(*p), default_keyb, MFC_KEY_B) < 0) {
-				nfc_perror (device, "mifare_classic_authenticate");
+				//nfc_perror (device, "mifare_classic_authenticate");
 				error = 1;
 				goto error;
 			    }
 			    if (mifare_classic_format_sector (tags[i], *p) < 0) {
-				nfc_perror (device, "mifare_classic_format_sector");
+				//nfc_perror (device, "mifare_classic_format_sector");
 				error = 1;
 				goto error;
 			    }
@@ -360,7 +355,7 @@ main(int argc, char *argv[])
 				   (card_write_keys[s].type != MFC_KEY_A)) {
 			    // Revert to transport configuration
 			    if (mifare_classic_format_sector (tags[i], s) < 0) {
-				nfc_perror (device, "mifare_classic_format_sector");
+				//nfc_perror (device, "mifare_classic_format_sector");
 				error = 1;
 				goto error;
 			    }
@@ -370,13 +365,13 @@ main(int argc, char *argv[])
 
 		MifareClassicSectorNumber *sectors = mifare_application_alloc (mad, mad_nfcforum_aid, encoded_size);
 		if (!sectors) {
-		    nfc_perror (device, "mifare_application_alloc");
+		    //nfc_perror (device, "mifare_application_alloc");
 		    error = EXIT_FAILURE;
 		    goto error;
 		}
 
 		if (mad_write (tags[i], mad, card_write_keys[0x00].key, card_write_keys[0x10].key) < 0) {
-		    nfc_perror (device, "mad_write");
+		    //nfc_perror (device, "mad_write");
 		    error = EXIT_FAILURE;
 		    goto error;
 		}
@@ -387,12 +382,12 @@ main(int argc, char *argv[])
 		    MifareClassicBlock block_data;
 		    mifare_classic_trailer_block (&block_data, mifare_classic_nfcforum_public_key_a, 0x0, 0x0, 0x0, 0x6, 0x40, default_keyb);
 		    if (mifare_classic_authenticate (tags[i], block, card_write_keys[sectors[s]].key, card_write_keys[sectors[s]].type) < 0) {
-			nfc_perror (device, "mifare_classic_authenticate");
+			//nfc_perror (device, "mifare_classic_authenticate");
 			error = EXIT_FAILURE;
 			goto error;
 		    }
 		    if (mifare_classic_write (tags[i], block, block_data) < 0) {
-			nfc_perror (device, "mifare_classic_write");
+			//nfc_perror (device, "mifare_classic_write");
 			error = EXIT_FAILURE;
 			goto error;
 		    }
@@ -400,7 +395,7 @@ main(int argc, char *argv[])
 		}
 
 		if ((ssize_t) encoded_size != mifare_application_write (tags[i], mad, mad_nfcforum_aid, tlv_data, encoded_size, default_keyb, MCAB_WRITE_KEYB)) {
-		    nfc_perror (device, "mifare_application_write");
+		    //nfc_perror (device, "mifare_application_write");
 		    error = EXIT_FAILURE;
 		    goto error;
 		}

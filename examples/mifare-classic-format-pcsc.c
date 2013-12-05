@@ -26,7 +26,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <freefare.h>
+#include <freefare_pcsc.h>
 
 #define START_FORMAT_N	"Formatting %d sectors ["
 #define DONE_FORMAT	"] done.\n"

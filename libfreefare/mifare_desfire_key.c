@@ -16,13 +16,16 @@
  * 
  * $Id$
  */
-
+#include "config.h"
 #include <stdlib.h>
 #include <string.h>
 
 #include <openssl/des.h>
 
 #include <freefare.h>
+#ifdef HAVE_PCSC
+#include "freefare_pcsc.h"
+#endif
 #include "freefare_internal.h"
 
 static inline void update_key_schedules (MifareDESFireKey key);

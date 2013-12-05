@@ -65,6 +65,9 @@
 #endif
 
 #include <freefare.h>
+#ifdef HAVE_PCSC
+#include "freefare_pcsc.h"
+#endif
 #include "freefare_internal.h"
 
 #define MAC_LENGTH 4

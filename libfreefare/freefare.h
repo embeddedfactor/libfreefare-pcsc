@@ -24,13 +24,10 @@
 
 #include <stdint.h>
 
+#ifndef __FREEFARE_PCSC_H__
+// For backwards compatibility:
+// If we don't include the pcsc header we probably want libnfc
 #include <nfc/nfc.h>
-
-#ifdef __APPLE__
-#include <PCSC/winscard.h>
-#include <PCSC/wintypes.h>
-#else
-#include <winscard.h>
 #endif
 
 #ifdef __cplusplus
@@ -59,24 +56,16 @@ typedef struct mifare_desfire_key *MifareDESFireKey;
 typedef uint8_t MifareUltralightPageNumber;
 typedef unsigned char MifareUltralightPage[4];
 
-struct pcsc_context {
-	SCARDCONTEXT context;
-	LPSTR readers;
-};
-
-void		 pcsc_init(struct pcsc_context** context);
-void		 pcsc_exit(struct pcsc_context* context);
-LONG		 pcsc_list_devices(struct pcsc_context* context, LPSTR* string);
-
+#ifndef __FREEFARE_PCSC_H__
 MifareTag	*freefare_get_tags (nfc_device *device);
-MifareTag 	*freefare_get_tags_pcsc (struct pcsc_context *context, const char *reader);
 MifareTag	 freefare_tag_new (nfc_device *device, nfc_iso14443a_info nai);
-MifareTag	 freefare_tag_new_pcsc(struct pcsc_context *context, const char *reader);
+#endif
+
 enum mifare_tag_type freefare_get_tag_type (MifareTag tag);
-const char	*freefare_get_tag_friendly_name (MifareTag tag);
-char		*freefare_get_tag_uid (MifareTag tag);
-void		 freefare_free_tag (MifareTag tag);
-void		 freefare_free_tags (MifareTag *tags);
+const char          *freefare_get_tag_friendly_name (MifareTag tag);
+char                *freefare_get_tag_uid (MifareTag tag);
+void                 freefare_free_tag (MifareTag tag);
+void                 freefare_free_tags (MifareTag *tags);
 
 const char	*freefare_strerror (MifareTag tag);
 int		 freefare_strerror_r (MifareTag tag, char *buffer, size_t len);
@@ -89,7 +78,9 @@ int		 mifare_ultralight_read (MifareTag tag, const MifareUltralightPageNumber pa
 int		 mifare_ultralight_write (MifareTag tag, const MifareUltralightPageNumber page, const MifareUltralightPage data);
 
 int		 mifare_ultralightc_authenticate (MifareTag tag, const MifareDESFireKey key);
+#ifndef __FREEFARE_PCSC_H__
 bool		 is_mifare_ultralightc_on_reader (nfc_device *device, nfc_iso14443a_info nai);
+#endif
 
 typedef unsigned char MifareClassicBlock[16];
 

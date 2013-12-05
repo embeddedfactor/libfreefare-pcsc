@@ -43,6 +43,9 @@
 #endif
 
 #include <freefare.h>
+#ifdef HAVE_PCSC
+#include "freefare_pcsc.h"
+#endif
 #include "freefare_internal.h"
 
 #define ASSERT_VALID_PAGE(tag, page, mode_write) \
@@ -58,12 +61,14 @@
 	} \
     } while (0)
 
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
 #define ULTRALIGHT_TRANSCEIVE(tag, msg, res) \
     do { \
 	errno = 0; \
 	int _res ; \
 	DEBUG_XFER (msg, __##msg##_n, "===> "); \
-	if (tag->device == NULL) {\
+	if (tag->device == NULL) \
+  { \
 	/* PCSC branch */\
 	    SCARD_IO_REQUEST __pcsc_rcv_pci; \
 	    DWORD __pcsc_recv_len = __##res##_size; \
@@ -71,7 +76,9 @@
 		return errno = EIO, -1; \
 	    } \
 	_res = __pcsc_recv_len; \
-	} else { \
+	} \
+  else \
+  { \
 	/* nfc branch */ \
 	    if ((_res = nfc_initiator_transceive_bytes (tag->device, msg, __##msg##_n, res, __##res##_size, 0)) < 0) { \
 		return errno = EIO, -1; \
@@ -83,9 +90,12 @@
 
 #define ULTRALIGHT_TRANSCEIVE_RAW(tag, msg, res) \
 do { \
-	if (tag->device == NULL){\
+	if (tag->device == NULL)\
+  {\
 		ULTRALIGHT_TRANSCEIVE(tag, msg, res); \
-	} else { \
+	} \
+  else \
+  { \
 	    errno = 0; \
 	    if (nfc_device_set_property_bool (tag->device, NP_EASY_FRAMING, false) < 0) { \
 	    errno = EIO; \
@@ -106,6 +116,70 @@ do { \
 	} \
 } while (0)
 
+#elif HAVE_LIBNFC
+#define ULTRALIGHT_TRANSCEIVE(tag, msg, res) \
+    do { \
+	errno = 0; \
+	int _res ; \
+	DEBUG_XFER (msg, __##msg##_n, "===> "); \
+  { \
+	/* nfc branch */ \
+	    if ((_res = nfc_initiator_transceive_bytes (tag->device, msg, __##msg##_n, res, __##res##_size, 0)) < 0) { \
+		return errno = EIO, -1; \
+	    } \
+	    __##res##_n = _res; \
+	    DEBUG_XFER (res, __##res##_n, "<=== "); \
+	} \
+    } while (0)
+
+#define ULTRALIGHT_TRANSCEIVE_RAW(tag, msg, res) \
+do { \
+  { \
+	    errno = 0; \
+	    if (nfc_device_set_property_bool (tag->device, NP_EASY_FRAMING, false) < 0) { \
+	    errno = EIO; \
+	    return -1; \
+	    } \
+	    DEBUG_XFER (msg, __##msg##_n, "===> "); \
+	    int _res; \
+	    if ((_res = nfc_initiator_transceive_bytes (tag->device, msg, __##msg##_n, res, __##res##_size, 0)) < 0) { \
+		nfc_device_set_property_bool (tag->device, NP_EASY_FRAMING, true); \
+		return errno = EIO, -1; \
+	    } \
+	    __##res##_n = _res; \
+	    DEBUG_XFER (res, __##res##_n, "<=== "); \
+	    if (nfc_device_set_property_bool (tag->device, NP_EASY_FRAMING, true) < 0) { \
+		errno = EIO; \
+		return -1; \
+	    } \
+	} \
+} while (0)
+
+#else
+#define ULTRALIGHT_TRANSCEIVE(tag, msg, res) \
+    do { \
+	errno = 0; \
+	int _res ; \
+	DEBUG_XFER (msg, __##msg##_n, "===> "); \
+  { \
+	/* PCSC branch */\
+	    SCARD_IO_REQUEST __pcsc_rcv_pci; \
+	    DWORD __pcsc_recv_len = __##res##_size; \
+	    if ((SCARD_S_SUCCESS != SCardTransmit(tag->hCard, SCARD_PCI_T0, msg, __##msg##_n, &__pcsc_rcv_pci, res, &__pcsc_recv_len)) < 0) { \
+		return errno = EIO, -1; \
+	    } \
+	_res = __pcsc_recv_len; \
+	} \
+    } while (0)
+
+#define ULTRALIGHT_TRANSCEIVE_RAW(tag, msg, res) \
+do { \
+  {\
+		ULTRALIGHT_TRANSCEIVE(tag, msg, res); \
+	} \
+} while (0)
+
+#endif
 /*
  * Memory management functions.
  */
@@ -147,7 +221,11 @@ mifare_ultralight_connect (MifareTag tag)
     ASSERT_INACTIVE (tag);
     ASSERT_MIFARE_ULTRALIGHT (tag);
 
-    if (tag->device == NULL) { /* pcsc branch */
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+    if (tag->device == NULL) 
+#endif
+#ifdef HAVE_PCSC
+    { /* pcsc branch */
 
 	DWORD dwActiveProtocol;
 
@@ -161,7 +239,12 @@ mifare_ultralight_connect (MifareTag tag)
 	    MIFARE_ULTRALIGHT(tag)->cached_pages[i] = 0;
 
     } 
-    else { /* nfc branch */
+#endif
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+    else 
+#endif
+#ifdef HAAVE_LIBNFC
+    { /* nfc branch */
     	nfc_target pnti;
     	nfc_modulation modulation = {
 	    .nmt = NMT_ISO14443A,
@@ -177,6 +260,7 @@ mifare_ultralight_connect (MifareTag tag)
     	}
     
     }
+#endif
     return 0;
 }
 
@@ -189,7 +273,11 @@ mifare_ultralight_disconnect (MifareTag tag)
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_ULTRALIGHT (tag);
 
-    if (tag->device == NULL) {
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+    if (tag->device == NULL) 
+#endif
+#ifdef HAVE_PCSC
+    {
 	/* pcsc branch */
 
 	if ( (tag->lastPCSCerror = SCardDisconnect (tag->hCard, SCARD_LEAVE_CARD) ) == SCARD_S_SUCCESS ) 
@@ -204,7 +292,11 @@ mifare_ultralight_disconnect (MifareTag tag)
 	}
 
     } 
+#endif
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
     else /* nfc branch */
+#endif
+#ifdef HAVE_LIBNFC
     { 
     	if (nfc_initiator_deselect_target (tag->device) >= 0) {
 	    tag->active = 0;
@@ -214,6 +306,7 @@ mifare_ultralight_disconnect (MifareTag tag)
     	}
         return 0;
     }
+#endif
 }
 
 
@@ -355,7 +448,7 @@ mifare_ultralightc_authenticate (MifareTag tag, const MifareDESFireKey key)
     // XXX Should we store the state "authenticated" in the tag struct??
     return 0;
 }
-
+#ifdef HAVE_LIBNFC
 /*
  * Callback for freefare_tag_new to test presence of a MIFARE UltralightC on the reader.
  */
@@ -380,3 +473,4 @@ is_mifare_ultralightc_on_reader (nfc_device *device, nfc_iso14443a_info nai)
     nfc_initiator_deselect_target (device);
     return ret >= 0;
 }
+#endif

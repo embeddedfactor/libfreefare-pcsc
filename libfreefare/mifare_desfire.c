@@ -64,7 +64,12 @@
 
 #include <openssl/rand.h>
 
+#ifdef HAVE_LIBNFC
 #include <freefare.h>
+#endif
+#ifdef HAVE_PCSC
+#include "freefare_pcsc.h"
+#endif
 #include "freefare_internal.h"
 
 #pragma pack (push)
@@ -163,6 +168,7 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
    CAPDUs will be 5 bytes longer (CLA+P1+P2+Lc+Le)
    RAPDUs will be 1 byte longer  (SW1 SW2 instead of 1 status byte)
  */
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
 #define DESFIRE_TRANSCEIVE2(tag, msg, msg_len, res) \
     do { \
 	static uint8_t __msg[MAX_CAPDU_SIZE + 5] = { 0x90, 0x00, 0x00, 0x00, 0x00, /* ..., */ 0x00 }; \
@@ -183,7 +189,8 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
 	MIFARE_DESFIRE (tag)->last_pcd_error = OPERATION_OK; \
 	DEBUG_XFER (__msg, __len, "===> "); \
 	int _res; \
-	if (tag->device == NULL) { /* pcsc branch */ \
+	if (tag->device == NULL) \
+  { /* pcsc branch */ \
 		SCARD_IO_REQUEST __pcsc_rcv_pci; \
 		DWORD __pcsc_recv_len = __##res##_size + 1; \
 		if (SCARD_S_SUCCESS != SCardTransmit(tag->hCard, &tag->pioSendPci, __msg, __len, &__pcsc_rcv_pci, __res, &__pcsc_recv_len)) { \
@@ -191,7 +198,8 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
 		} \
 		_res = __pcsc_recv_len; \
 	} \
-	else { /* nfc branch */ \
+	else \
+  { /* nfc branch */ \
 		if ((_res = nfc_initiator_transceive_bytes (tag->device, __msg, __len, __res, __##res##_size + 1, 0)) < 0) { \
 	    	    return errno = EIO, -1; \
 		} \
@@ -206,8 +214,82 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
 	memcpy (res, __res, __##res##_n - 1); \
     } while (0)
 
+#elif HAVE_LIBNFC
+#define DESFIRE_TRANSCEIVE2(tag, msg, msg_len, res) \
+    do { \
+	static uint8_t __msg[MAX_CAPDU_SIZE + 5] = { 0x90, 0x00, 0x00, 0x00, 0x00, /* ..., */ 0x00 }; \
+	/*                                       CLA   INS   P1    P2    Lc    PAYLOAD    LE*/ \
+	static uint8_t __res[MAX_RAPDU_SIZE + 1]; \
+	size_t __len = 5; \
+	errno = 0; \
+	if (!msg) return errno = EINVAL, -1; \
+	__msg[1] = msg[0]; \
+	if (msg_len > 1) { \
+	    __len += msg_len; \
+	    __msg[4] = msg_len - 1; \
+	    memcpy (__msg + 5, msg + 1, msg_len - 1); \
+	} \
+	/* reply length */ \
+	__msg[__len-1] = 0x00; \
+	MIFARE_DESFIRE (tag)->last_picc_error = OPERATION_OK; \
+	MIFARE_DESFIRE (tag)->last_pcd_error = OPERATION_OK; \
+	DEBUG_XFER (__msg, __len, "===> "); \
+	int _res; \
+  { /* nfc branch */ \
+		if ((_res = nfc_initiator_transceive_bytes (tag->device, __msg, __len, __res, __##res##_size + 1, 0)) < 0) { \
+	    	    return errno = EIO, -1; \
+		} \
+	} \
+	__##res##_n = _res; \
+	DEBUG_XFER (__res, __##res##_n, "<=== "); \
+	res[__##res##_n-2] = __res[__##res##_n-1]; \
+	__##res##_n--; \
+	if ((1 == __##res##_n) && (ADDITIONAL_FRAME != res[__##res##_n-1]) && (OPERATION_OK != res[__##res##_n-1])) { \
+	    return MIFARE_DESFIRE (tag)->last_picc_error = res[0], -1; \
+	} \
+	memcpy (res, __res, __##res##_n - 1); \
+    } while (0)
 
+#else
+#define DESFIRE_TRANSCEIVE2(tag, msg, msg_len, res) \
+    do { \
+	static uint8_t __msg[MAX_CAPDU_SIZE + 5] = { 0x90, 0x00, 0x00, 0x00, 0x00, /* ..., */ 0x00 }; \
+	/*                                       CLA   INS   P1    P2    Lc    PAYLOAD    LE*/ \
+	static uint8_t __res[MAX_RAPDU_SIZE + 1]; \
+	size_t __len = 5; \
+	errno = 0; \
+	if (!msg) return errno = EINVAL, -1; \
+	__msg[1] = msg[0]; \
+	if (msg_len > 1) { \
+	    __len += msg_len; \
+	    __msg[4] = msg_len - 1; \
+	    memcpy (__msg + 5, msg + 1, msg_len - 1); \
+	} \
+	/* reply length */ \
+	__msg[__len-1] = 0x00; \
+	MIFARE_DESFIRE (tag)->last_picc_error = OPERATION_OK; \
+	MIFARE_DESFIRE (tag)->last_pcd_error = OPERATION_OK; \
+	DEBUG_XFER (__msg, __len, "===> "); \
+	int _res; \
+  { /* pcsc branch */ \
+		SCARD_IO_REQUEST __pcsc_rcv_pci; \
+		DWORD __pcsc_recv_len = __##res##_size + 1; \
+		if (SCARD_S_SUCCESS != SCardTransmit(tag->hCard, &tag->pioSendPci, __msg, __len, &__pcsc_rcv_pci, __res, &__pcsc_recv_len)) { \
+			return errno = EIO, -1; \
+		} \
+		_res = __pcsc_recv_len; \
+	} \
+	__##res##_n = _res; \
+	DEBUG_XFER (__res, __##res##_n, "<=== "); \
+	res[__##res##_n-2] = __res[__##res##_n-1]; \
+	__##res##_n--; \
+	if ((1 == __##res##_n) && (ADDITIONAL_FRAME != res[__##res##_n-1]) && (OPERATION_OK != res[__##res##_n-1])) { \
+	    return MIFARE_DESFIRE (tag)->last_picc_error = res[0], -1; \
+	} \
+	memcpy (res, __res, __##res##_n - 1); \
+    } while (0)
 
+#endif
 /*
  * Miscellaneous low-level memory manipulation functions.
  */
@@ -298,7 +380,10 @@ mifare_desfire_connect (MifareTag tag)
     ASSERT_INACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
 
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
     if(NULL != tag->device) // nfc way
+#endif
+#ifdef HAVE_LIBNFC
     {
 	nfc_target pnti;
 	nfc_modulation modulation = {
@@ -312,7 +397,11 @@ mifare_desfire_connect (MifareTag tag)
 	    return -1;
 	}
     }
+#endif
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
     else	// pcsc way
+#endif
+#ifdef HAVE_PCSC
     {
 	DWORD	dwActiveProtocol;
 	
@@ -332,6 +421,7 @@ mifare_desfire_connect (MifareTag tag)
 	         break;
 	}
     }
+#endif
  
     tag->active = 1;
     free (MIFARE_DESFIRE (tag)->session_key);
@@ -356,13 +446,20 @@ mifare_desfire_disconnect (MifareTag tag)
     free (MIFARE_DESFIRE (tag)->session_key);
     MIFARE_DESFIRE(tag)->session_key = NULL;
     
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
     if(NULL != tag->device) // nfclib way
+#endif
+#ifdef HAVE_LIBNFC
     {
  	if (nfc_initiator_deselect_target (tag->device) >= 0) {
 	    tag->active = 0;
 	}
     }
+#endif
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
     else // pcsc way
+#endif
+#ifdef HAVE_PCSC
     {
 	tag->lastPCSCerror = SCardDisconnect(tag->hCard, SCARD_LEAVE_CARD);
 	if(SCARD_S_SUCCESS == tag->lastPCSCerror) 
@@ -370,6 +467,7 @@ mifare_desfire_disconnect (MifareTag tag)
 	    tag->active = 0;
 	}
     }
+#endif
 
     
 

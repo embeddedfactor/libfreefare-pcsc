@@ -20,9 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <nfc/nfc.h>
-
-#include <freefare.h>
+#include <freefare_pcsc.h>
 
 int
 main (int argc, char *argv[])

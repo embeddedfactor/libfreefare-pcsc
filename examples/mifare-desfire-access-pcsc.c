@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <freefare.h>
+#include <freefare_pcsc.h>
 
 uint8_t key_data_null[8]  = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
