@@ -24,13 +24,13 @@
 
 #ifdef HAVE_LIBNFC
 #include <nfc/nfc.h>
-#endif
 #include <freefare.h>
+#endif
 #ifdef HAVE_PCSC
 #include "freefare_pcsc.h"
 #endif
 
-#include <reader.h>
+//#include <reader.h>
 
 #include "freefare_internal.h"
 
@@ -48,7 +48,11 @@ struct supported_tag supported_tags[] = {
     { CLASSIC_4K,   "Mifare Classic 4k",            0x18, 0, 0, { 0x00 }, NULL },
     { CLASSIC_4K,   "Mifare Classic 4k (Emulated)", 0x38, 0, 0, { 0x00 }, NULL },
     { DESFIRE,      "Mifare DESFire",               0x20, 5, 4, { 0x75, 0x77, 0x81, 0x02 /*, 0xXX */ }, NULL},
+#if (!defined(is_mifare_ultralightc_on_reader))
+    { ULTRALIGHT_C, "Mifare UltraLightC",           0x00, 0, 0, { 0x00 }, NULL },
+#else
     { ULTRALIGHT_C, "Mifare UltraLightC",           0x00, 0, 0, { 0x00 }, is_mifare_ultralightc_on_reader },
+#endif
     { ULTRALIGHT,   "Mifare UltraLight",            0x00, 0, 0, { 0x00 }, NULL },
 };
 
@@ -121,6 +125,9 @@ freefare_tag_new_pcsc (struct pcsc_context *context, const char *reader)
     uint8_t buf[] = { 0xFF, 0xCA, 0x00, 0x00, 0x00 };
     uint8_t ret[12];
     unsigned char pbAttr[MAX_ATR_SIZE];
+    unsigned int k;
+    char crc = 0x00;
+    size_t size;
     MifareTag tag;
     LONG err;
     DWORD atrlen = sizeof(pbAttr);
@@ -158,27 +165,27 @@ freefare_tag_new_pcsc (struct pcsc_context *context, const char *reader)
     }
 
     found = false;
-    for (int i = 0; pcsc_supported_atrs[i].len != 0; i++){
-	if (atrlen != pcsc_supported_atrs[i].len) { 
+    for (k = 0; pcsc_supported_atrs[k].len != 0; k++){
+	if (atrlen != pcsc_supported_atrs[k].len) { 
 	    continue;
 	}
-	if ( pcsc_supported_atrs[i].mask == NULL ){
+	if ( pcsc_supported_atrs[k].mask == NULL ){
 	    /* no bitmask here */
-	    if ( ! memcmp(pcsc_supported_atrs[i].tag ,pbAttr ,atrlen) ) {
-		tagtype = pcsc_supported_atrs[i].type;
+	    if ( ! memcmp(pcsc_supported_atrs[k].tag ,pbAttr ,atrlen) ) {
+		tagtype = pcsc_supported_atrs[k].type;
 		found = true;
 		break;
 	    }
 	} else {
 	    /* bitmask case */
-	    int c;
-	    for (c = 0; c < pcsc_supported_atrs[i].len; c++){
-		if((pcsc_supported_atrs[i].tag[c] & pcsc_supported_atrs[i].mask[c]) != (pbAttr[c] & pcsc_supported_atrs[i].mask[c])){
+	    int c = 0;
+	    for (c = 0; c < pcsc_supported_atrs[k].len; c++){
+		if((pcsc_supported_atrs[k].tag[c] & pcsc_supported_atrs[k].mask[c]) != (pbAttr[c] & pcsc_supported_atrs[k].mask[c])){
 		    break;
 		}
 	    }
-	    if (c == pcsc_supported_atrs[i].len) {
-		tagtype = pcsc_supported_atrs[i].type;
+	    if (c == pcsc_supported_atrs[k].len) {
+		tagtype = pcsc_supported_atrs[k].type;
 		found = true;
 		break;
 	    }
@@ -189,9 +196,9 @@ freefare_tag_new_pcsc (struct pcsc_context *context, const char *reader)
     }
 
     found = false;
-    for (size_t i = 0; i < sizeof (supported_tags) / sizeof (struct supported_tag); i++) {
-	if(supported_tags[i].type == tagtype) {
-	    tag_info = &(supported_tags[i]);
+    for (size = 0; size < sizeof (supported_tags) / sizeof (struct supported_tag); size++) {
+	if(supported_tags[size].type == tagtype) {
+	    tag_info = &(supported_tags[size]);
 	    found = true;
 	    break;
 	}
@@ -200,10 +207,9 @@ freefare_tag_new_pcsc (struct pcsc_context *context, const char *reader)
     if(!found)
 	return NULL;
 
-    char crc = 0x00;
-    for (int crc_count = 1 /*! 1. Byte wird ignoriert*/ ; crc_count < atrlen; crc_count++ )
+    for (k = 1 /*! 1. Byte wird ignoriert*/ ; k < atrlen; k++ )
     {
-	crc ^= pbAttr[crc_count];
+	crc ^= pbAttr[k];
     }
     if (crc)
     	return NULL;
@@ -327,7 +333,7 @@ freefare_get_tags_pcsc (struct pcsc_context *context, const char *reader)
 {
     MifareTag *tags = NULL;
     
-    tags = malloc(2*sizeof (MifareTag));
+    tags = (MifareTag *)malloc(2*sizeof (MifareTag));
     if(!tags)
     {
 	return NULL;
@@ -364,8 +370,9 @@ freefare_get_tag_friendly_name (MifareTag tag)
 char *
 freefare_get_tag_uid (MifareTag tag)
 {
-   	char *res = malloc (2 * tag->info.szUidLen + 1);
-   	for (size_t i =0; i < tag->info.szUidLen; i++)
+    size_t i;
+   	char *res = (char *)malloc (2 * tag->info.szUidLen + 1);
+   	for (i =0; i < tag->info.szUidLen; i++)
        	snprintf (res + 2*i, 3, "%02x", tag->info.abtUid[i]);
    	return res;
 }
@@ -423,8 +430,12 @@ freefare_strerror (MifareTag tag)
 #ifdef HAVE_PCSC
     {
 	if (tag->lastPCSCerror != 0){
+#ifdef _WIN32
+    return "Internal PCSC error";
+#else
 	    p = (const char*) pcsc_stringify_error(tag->lastPCSCerror);
     	    return p;
+#endif
 	} else {
 	     if (tag->tag_info->type == DESFIRE) {
 		if (MIFARE_DESFIRE (tag)->last_pcd_error) {
@@ -457,8 +468,9 @@ freefare_perror (MifareTag tag, const char *string)
 void
 freefare_free_tags (MifareTag *tags)
 {
+  int i;
     if (tags) {
-	for (int i=0; tags[i]; i++) {
+	for (i=0; tags[i]; i++) {
 	    freefare_free_tag(tags[i]);
 	}
 	free (tags);
@@ -473,7 +485,7 @@ void
 pcsc_init(struct pcsc_context** context)
 {
 	LONG err;
-	struct pcsc_context *con =  malloc(sizeof(struct pcsc_context));
+	struct pcsc_context *con =  (struct pcsc_context *)malloc(sizeof(struct pcsc_context));
 	err = SCardEstablishContext(SCARD_SCOPE_SYSTEM, NULL, NULL, &con->context);
 	if (err < 0)
 	{
@@ -509,7 +521,7 @@ pcsc_list_devices(struct pcsc_context* context, LPSTR *string)
     static char empty[] = "\0";
 
     err = SCardListReaders(context->context, NULL, NULL, &size);
-    str = malloc(sizeof(char) * size);
+    str = (char *)malloc(sizeof(char) * size);
     if (!str)
     {
     	context->readers = NULL;

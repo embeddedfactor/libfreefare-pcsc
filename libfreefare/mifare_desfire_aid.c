@@ -52,7 +52,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef HAVE_LIBNFC
 #include <freefare.h>
+#endif
 #ifdef HAVE_PCSC
 #include "freefare_pcsc.h"
 #endif
@@ -68,7 +70,7 @@ mifare_desfire_aid_new (uint32_t aid)
     MifareDESFireAID res;
     uint32_t aid_le = htole32 (aid);
 
-    if ((res = malloc (sizeof (*res)))) {
+    if ((res = (MifareDESFireAID)malloc (sizeof (*res)))) {
 	memcpy(res->data, ((uint8_t*)&aid_le), 3);
     }
 

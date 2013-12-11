@@ -22,7 +22,9 @@
 
 #include <stdlib.h>
 
+#ifdef HAVE_LIBNFC
 #include <freefare.h>
+#endif
 #ifdef HAVE_PCSC
 #include "freefare_pcsc.h"
 #endif

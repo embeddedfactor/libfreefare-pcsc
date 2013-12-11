@@ -36,9 +36,14 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
+//#include <strings.h>
 
+#ifdef HAVE_LIBNFC
 #include <freefare.h>
+#endif
+#ifdef HAVE_PCSC
+#include "freefare_pcsc.h"
+#endif
 
 /*
  * The documentation says the preset is 0xE3 but the bits have to be mirrored:
@@ -75,34 +80,34 @@ const MifareClassicKey mad_public_key_a = {
 /* AID - Administration codes: */
 /* if sector is free */
 const MadAid mad_free_aid = {
-    .function_cluster_code = 0x00,
-    .application_code = 0x00,
+    0x00, // application_code
+    0x00  // function_cluster_code
 };
 /* if sector is defect, e.g. access keys are destroyed or unknown */
 const MadAid mad_defect_aid = {
-    .function_cluster_code = 0x00,
-    .application_code = 0x01,
+    0x01, // application_code
+    0x00  // function_cluster_code
 };
 /* if sector is reserved */
 const MadAid mad_reserved_aid = {
-    .function_cluster_code = 0x00,
-    .application_code = 0x02,
+    0x02, // application_code
+    0x00  // function_cluster_code
 };
 /* if sector contains card holder information in ASCII format. */
 const MadAid mad_card_holder_aid = {
-    .function_cluster_code = 0x00,
-    .application_code = 0x04,
+    0x04, // application_code
+    0x00  // function_cluster_code
 };
 /* if sector not applicable (above memory size) */
 const MadAid mad_not_applicable_aid = {
-    .function_cluster_code = 0x00,
-    .application_code = 0x05,
+    0x05, // application_code
+    0x00  // function_cluster_code
 };
 
 /* NFC Forum AID */
 const MadAid mad_nfcforum_aid = {
-    .function_cluster_code = 0xe1,
-    .application_code = 0x03,
+    0x03, // application_code
+    0xe1  // function_cluster_code
 };
 
 /*
@@ -111,7 +116,7 @@ const MadAid mad_nfcforum_aid = {
 Mad
 mad_new (uint8_t version)
 {
-    Mad mad = malloc (sizeof (*mad));
+    Mad mad = (Mad)malloc (sizeof (*mad));
 
     if (!mad)
 	return NULL;
@@ -178,7 +183,7 @@ sector_0x10_crc8 (Mad mad)
 Mad
 mad_read (MifareTag tag)
 {
-    Mad mad = malloc (sizeof (*mad));
+    Mad mad = (Mad)malloc (sizeof (*mad));
 
     if (!mad)
 	goto error;

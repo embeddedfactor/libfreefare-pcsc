@@ -42,7 +42,9 @@
 #  include <libutil.h>
 #endif
 
+#ifdef HAVE_LIBNFC
 #include <freefare.h>
+#endif
 #ifdef HAVE_PCSC
 #include "freefare_pcsc.h"
 #endif
@@ -64,8 +66,8 @@
 #if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
 #define ULTRALIGHT_TRANSCEIVE(tag, msg, res) \
     do { \
-	errno = 0; \
 	int _res ; \
+	errno = 0; \
 	DEBUG_XFER (msg, __##msg##_n, "===> "); \
 	if (tag->device == NULL) \
   { \
@@ -86,7 +88,7 @@
 	    __##res##_n = _res; \
 	    DEBUG_XFER (res, __##res##_n, "<=== "); \
 	} \
-    } while (0)
+    } while (0);
 
 #define ULTRALIGHT_TRANSCEIVE_RAW(tag, msg, res) \
 do { \
@@ -96,13 +98,13 @@ do { \
 	} \
   else \
   { \
+	    int _res; \
 	    errno = 0; \
 	    if (nfc_device_set_property_bool (tag->device, NP_EASY_FRAMING, false) < 0) { \
 	    errno = EIO; \
 	    return -1; \
 	    } \
 	    DEBUG_XFER (msg, __##msg##_n, "===> "); \
-	    int _res; \
 	    if ((_res = nfc_initiator_transceive_bytes (tag->device, msg, __##msg##_n, res, __##res##_size, 0)) < 0) { \
 		nfc_device_set_property_bool (tag->device, NP_EASY_FRAMING, true); \
 		return errno = EIO, -1; \
@@ -114,13 +116,13 @@ do { \
 		return -1; \
 	    } \
 	} \
-} while (0)
+} while (0);
 
 #elif HAVE_LIBNFC
 #define ULTRALIGHT_TRANSCEIVE(tag, msg, res) \
     do { \
-	errno = 0; \
 	int _res ; \
+	errno = 0; \
 	DEBUG_XFER (msg, __##msg##_n, "===> "); \
   { \
 	/* nfc branch */ \
@@ -135,13 +137,13 @@ do { \
 #define ULTRALIGHT_TRANSCEIVE_RAW(tag, msg, res) \
 do { \
   { \
+	    int _res; \
 	    errno = 0; \
 	    if (nfc_device_set_property_bool (tag->device, NP_EASY_FRAMING, false) < 0) { \
 	    errno = EIO; \
 	    return -1; \
 	    } \
 	    DEBUG_XFER (msg, __##msg##_n, "===> "); \
-	    int _res; \
 	    if ((_res = nfc_initiator_transceive_bytes (tag->device, msg, __##msg##_n, res, __##res##_size, 0)) < 0) { \
 		nfc_device_set_property_bool (tag->device, NP_EASY_FRAMING, true); \
 		return errno = EIO, -1; \
@@ -153,31 +155,31 @@ do { \
 		return -1; \
 	    } \
 	} \
-} while (0)
+} while (0);
 
 #else
 #define ULTRALIGHT_TRANSCEIVE(tag, msg, res) \
     do { \
-	errno = 0; \
 	int _res ; \
+	errno = 0; \
 	DEBUG_XFER (msg, __##msg##_n, "===> "); \
   { \
 	/* PCSC branch */\
 	    SCARD_IO_REQUEST __pcsc_rcv_pci; \
 	    DWORD __pcsc_recv_len = __##res##_size; \
-	    if ((SCARD_S_SUCCESS != SCardTransmit(tag->hCard, SCARD_PCI_T0, msg, __##msg##_n, &__pcsc_rcv_pci, res, &__pcsc_recv_len)) < 0) { \
+	    if ((SCARD_S_SUCCESS != SCardTransmit(tag->hCard, SCARD_PCI_T0, msg, __##msg##_n, &__pcsc_rcv_pci, res, &__pcsc_recv_len))) { \
 		return errno = EIO, -1; \
 	    } \
 	_res = __pcsc_recv_len; \
 	} \
-    } while (0)
+    } while (0);
 
 #define ULTRALIGHT_TRANSCEIVE_RAW(tag, msg, res) \
 do { \
   {\
 		ULTRALIGHT_TRANSCEIVE(tag, msg, res); \
 	} \
-} while (0)
+} while (0);
 
 #endif
 /*
@@ -190,7 +192,7 @@ do { \
 MifareTag
 mifare_ultralight_tag_new (void)
 {
-    return malloc (sizeof (struct mifare_ultralight_tag));
+    return (MifareTag)malloc (sizeof (struct mifare_ultralight_tag));
 }
 
 /*
@@ -218,6 +220,7 @@ mifare_ultralight_tag_free (MifareTag tag)
 int
 mifare_ultralight_connect (MifareTag tag)
 {
+    int i;
     ASSERT_INACTIVE (tag);
     ASSERT_MIFARE_ULTRALIGHT (tag);
 
@@ -235,7 +238,7 @@ mifare_ultralight_connect (MifareTag tag)
 	}
 	
 	tag->active = 1;
-	for (int i = 0; i < MIFARE_ULTRALIGHT_MAX_PAGE_COUNT; i++)
+	for (i = 0; i < MIFARE_ULTRALIGHT_MAX_PAGE_COUNT; i++)
 	    MIFARE_ULTRALIGHT(tag)->cached_pages[i] = 0;
 
     } 
@@ -252,7 +255,7 @@ mifare_ultralight_connect (MifareTag tag)
     	};
     	if (nfc_initiator_select_passive_target (tag->device, modulation, tag->info.abtUid, tag->info.szUidLen, &pnti) >= 0) {
 	    tag->active = 1;
-	    for (int i = 0; i < MIFARE_ULTRALIGHT_MAX_PAGE_COUNT; i++)
+	    for (i = 0; i < MIFARE_ULTRALIGHT_MAX_PAGE_COUNT; i++)
 	    	MIFARE_ULTRALIGHT(tag)->cached_pages[i] = 0;
     	} else {
 	    errno = EIO;
@@ -321,8 +324,10 @@ mifare_ultralight_disconnect (MifareTag tag)
  * Read data from the provided MIFARE tag.
  */
 int
-mifare_ultralight_read (MifareTag tag, MifareUltralightPageNumber page, MifareUltralightPage *data)
+mifare_ultralight_read (MifareTag tag, const MifareUltralightPageNumber page, MifareUltralightPage *data)
 {
+    int i;
+	int iPageCount;
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_ULTRALIGHT (tag);
     ASSERT_VALID_PAGE (tag, page, false);
@@ -337,20 +342,20 @@ mifare_ultralight_read (MifareTag tag, MifareUltralightPageNumber page, MifareUl
 	ULTRALIGHT_TRANSCEIVE (tag, cmd, res);
 
 	/* Handle wrapped pages */
-	int iPageCount;
 	if (IS_MIFARE_ULTRALIGHT_C(tag)) {
 	    iPageCount = MIFARE_ULTRALIGHT_C_PAGE_COUNT_READ;
 	} else {
 	    iPageCount = MIFARE_ULTRALIGHT_PAGE_COUNT;
 	}
-	for (int i = iPageCount; i <= page + 3; i++) {
+	for (i = iPageCount; i <= page + 3; i++) {
 	    memcpy (MIFARE_ULTRALIGHT(tag)->cache[i % iPageCount], MIFARE_ULTRALIGHT(tag)->cache[i], sizeof (MifareUltralightPage));
 	}
 
 	/* Mark pages as cached */
-	for (int i = page; i <= page + 3; i++) {
+	for (i = page; i <= page + 3; i++) {
 	    MIFARE_ULTRALIGHT(tag)->cached_pages[i % iPageCount] = 1;
 	}
+    BUFFER_FREE(cmd);
     }
 
     memcpy (data, MIFARE_ULTRALIGHT(tag)->cache[page], sizeof (*data));
@@ -379,6 +384,8 @@ mifare_ultralight_write (MifareTag tag, const MifareUltralightPageNumber page, c
     /* Invalidate page in cache */
     MIFARE_ULTRALIGHT(tag)->cached_pages[page] = 0;
 
+    BUFFER_FREE(cmd);
+    BUFFER_FREE(res);
     return 0;
 }
 
@@ -442,6 +449,9 @@ mifare_ultralightc_authenticate (MifareTag tag, const MifareDESFireKey key)
     memcpy (PCD_RndA_s, PCD_RndA, 8);
     rol (PCD_RndA_s, 8);
 
+    BUFFER_FREE(cmd1);
+    BUFFER_FREE(cmd2);
+    BUFFER_FREE(res);
     if (0 != memcmp (PCD_RndA_s, PICC_RndA_s, 8)) {
 	return -1;
     }
