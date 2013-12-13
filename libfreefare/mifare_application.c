@@ -29,7 +29,9 @@
 #include <string.h>
 #include <stdlib.h>
 
+#ifdef HAVE_LIBNFC
 #include <freefare.h>
+#endif
 #ifdef HAVE_PCSC
 #include "freefare_pcsc.h"
 #endif
@@ -141,7 +143,7 @@ mifare_application_alloc (Mad mad, MadAid aid, size_t size)
 	if (sector_map[i])
 	    n++;
 
-    if (!(res = malloc (sizeof (*res) * (n+1))))
+    if (!(res = (MifareClassicSectorNumber *)malloc (sizeof (*res) * (n+1))))
 	return NULL;
 
     n = 0;
@@ -190,7 +192,7 @@ mifare_application_find (Mad mad, MadAid aid)
     size_t res_count = count_aids (mad, aid);
 
     if (res_count)
-	res = malloc (sizeof (*res) * (res_count + 1));
+	res = (MifareClassicSectorNumber *)malloc (sizeof (*res) * (res_count + 1));
 
     size_t r = FIRST_SECTOR, w = 0;
     if (res) {

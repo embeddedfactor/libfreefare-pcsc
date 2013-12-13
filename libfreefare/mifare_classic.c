@@ -63,7 +63,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
+//#include <strings.h>
 
 #ifdef WITH_DEBUG
 #  include <libutil.h>
@@ -269,7 +269,7 @@ int		 get_block_access_bits (MifareTag tag, const MifareClassicBlockNumber block
 MifareTag
 mifare_classic_tag_new (void)
 {
-    return malloc (sizeof (struct mifare_classic_tag));
+    return (MifareTag)malloc (sizeof (struct mifare_classic_tag));
 }
 
 /*
@@ -393,16 +393,18 @@ mifare_classic_disconnect (MifareTag tag)
 int
 mifare_classic_authenticate (MifareTag tag, const MifareClassicBlockNumber block, const MifareClassicKey key, const MifareClassicKeyType key_type)
 {
+    int result = 0;
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_CLASSIC (tag);
 
     BUFFER_INIT (cmd, 12);
     BUFFER_INIT (res, 1);
 
-    if (key_type == MFC_KEY_A)
+    if (key_type == MFC_KEY_A) {
 	BUFFER_APPEND (cmd, MC_AUTH_A);
-    else
+    } else {
 	BUFFER_APPEND (cmd, MC_AUTH_B);
+    }
 
     BUFFER_APPEND(cmd, block);
     BUFFER_APPEND_BYTES (cmd, key, 6);
@@ -415,7 +417,10 @@ mifare_classic_authenticate (MifareTag tag, const MifareClassicBlockNumber block
     MIFARE_CLASSIC(tag)->cached_access_bits.sector_access_bits = 0x00;
     MIFARE_CLASSIC(tag)->last_authentication_key_type = key_type;
 
-    return (BUFFER_SIZE (res) == 0) ? 0 : res[0];
+    result = (BUFFER_SIZE (res) == 0) ? 0 : res[0];
+    BUFFER_FREE(cmd);
+    BUFFER_FREE(res);
+    return result;
 }
 
 /*
@@ -435,6 +440,7 @@ mifare_classic_read (MifareTag tag, const MifareClassicBlockNumber block, Mifare
 
     CLASSIC_TRANSCEIVE (tag, cmd, res);
 
+    BUFFER_FREE(cmd);
     return 0;
 }
 
@@ -493,6 +499,7 @@ mifare_classic_read_value (MifareTag tag, const MifareClassicBlockNumber block, 
 int
 mifare_classic_write (MifareTag tag, const MifareClassicBlockNumber block, const MifareClassicBlock data)
 {
+    int result = 0;
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_CLASSIC (tag);
 
@@ -505,7 +512,10 @@ mifare_classic_write (MifareTag tag, const MifareClassicBlockNumber block, const
 
     CLASSIC_TRANSCEIVE (tag, cmd, res);
 
-    return (BUFFER_SIZE (res) == 0) ? 0 : res[0];
+    result = (BUFFER_SIZE (res) == 0) ? 0 : res[0];
+    BUFFER_FREE(cmd);
+    BUFFER_FREE(res);
+    return result;
 }
 
 /*
@@ -515,6 +525,7 @@ mifare_classic_write (MifareTag tag, const MifareClassicBlockNumber block, const
 int
 mifare_classic_increment (MifareTag tag, const MifareClassicBlockNumber block, const uint32_t amount)
 {
+    int result = 0;
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_CLASSIC (tag);
 
@@ -527,7 +538,10 @@ mifare_classic_increment (MifareTag tag, const MifareClassicBlockNumber block, c
 
     CLASSIC_TRANSCEIVE (tag, cmd, res);
 
-    return (BUFFER_SIZE (res) == 0) ? 0 : res[0];
+    result = (BUFFER_SIZE (res) == 0) ? 0 : res[0];
+    BUFFER_FREE(cmd);
+    BUFFER_FREE(res);
+    return result;
 }
 
 /*
@@ -537,6 +551,7 @@ mifare_classic_increment (MifareTag tag, const MifareClassicBlockNumber block, c
 int
 mifare_classic_decrement (MifareTag tag, const MifareClassicBlockNumber block, const uint32_t amount)
 {
+    int result = 0;
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_CLASSIC (tag);
 
@@ -549,7 +564,10 @@ mifare_classic_decrement (MifareTag tag, const MifareClassicBlockNumber block, c
 
     CLASSIC_TRANSCEIVE (tag, cmd, res);
 
-    return (BUFFER_SIZE (res) == 0) ? 0 : res[0];
+    result = (BUFFER_SIZE (res) == 0) ? 0 : res[0];
+    BUFFER_FREE(cmd);
+    BUFFER_FREE(res);
+    return result;
 }
 
 /*
@@ -558,6 +576,7 @@ mifare_classic_decrement (MifareTag tag, const MifareClassicBlockNumber block, c
 int
 mifare_classic_restore (MifareTag tag, const MifareClassicBlockNumber block)
 {
+    int result = 0;
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_CLASSIC (tag);
 
@@ -578,7 +597,10 @@ mifare_classic_restore (MifareTag tag, const MifareClassicBlockNumber block)
 
     CLASSIC_TRANSCEIVE (tag, cmd, res);
 
-    return (BUFFER_SIZE (res) == 0) ? 0 : res[0];
+    result = (BUFFER_SIZE (res) == 0) ? 0 : res[0];
+    BUFFER_FREE(cmd);
+    BUFFER_FREE(res);
+    return result;
 }
 
 /*
@@ -587,6 +609,7 @@ mifare_classic_restore (MifareTag tag, const MifareClassicBlockNumber block)
 int
 mifare_classic_transfer (MifareTag tag, const MifareClassicBlockNumber block)
 {
+    int result = 0;
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_CLASSIC (tag);
 
@@ -605,9 +628,12 @@ mifare_classic_transfer (MifareTag tag, const MifareClassicBlockNumber block)
      * SCL 3711).
      */
     if (!BUFFER_SIZE (res) || ((BUFFER_SIZE (res) == 1) && (res[0] = MC_OK)))
-	return 0;
+	result = 0;
     else
-	return res[0];
+	result = res[0];
+    BUFFER_FREE(cmd);
+    BUFFER_FREE(res);
+    return result;
 }
 
 
