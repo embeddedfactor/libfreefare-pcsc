@@ -3,33 +3,32 @@
     "freefare_url": "https://github.com/hackerhelmut/libfreefare-pcsc.git",
     "freefare_src": "libfreefare",
   },
-  "conditions": [
-      ["OS=='linux'", {
+  "targets": [
+    {
+      "target_name": "freefare_pcsc",
+      "product_prefix": "lib",
+      "type": "static_library",
+      "conditions": [
+        ["OS=='linux'", {
           "variables": {
             "freefare_contrib": "contrib/linux",
             "openssl_inc": "/usr/include"
           }
-      }],
-      ["OS=='mac'", {
-          "variables": {
-            "freefare_contrib": "contrib/macos",
-            "openssl_inc": "C:\OpenSSL-Win32/include"
-          }
-      }],
-      ["OS=='win'", {
-          "variables": {
-            "freefare_contrib": "contrib/win32",
-            "openssl_inc": "C:\OpenSSL-Win32/include"
-          },
-      }]
-
-  ],
-  "targets": [
-    {
-        "target_name": "freefare_pcsc",
-        "target_name": "freefare_pcsc",
-        "product_prefix": "lib",
-        "type": "static_library",
+        }],
+        ["OS=='mac'", {
+          "include_dirs": [
+            "contrib/macos",
+            "/System/Library/Frameworks/PCSC.framework/Headers"
+          ],
+          "libraries": ["-framework", "PCSC"]
+        }],
+        ["OS=='win'", {
+          "include_dirs": [
+            "contrib/win32",
+            "C:\OpenSSL-Win32/include"
+          ],
+        }]
+      ],
         "sources": [
           "<(freefare_src)/freefare.c",
           "<(freefare_src)/freefare.h",
@@ -65,9 +64,7 @@
           },
         },
         "include_dirs": [
-            "<(freefare_contrib)", 
             "<(freefare_src)", 
-            "<(openssl_inc)"
         ],
         "libraries": [
         ]

@@ -30,7 +30,7 @@
 #include "freefare_pcsc.h"
 #endif
 
-//#include <reader.h>
+#include <reader.h>
 
 #include "freefare_internal.h"
 
