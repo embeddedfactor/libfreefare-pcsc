@@ -11,7 +11,7 @@ Makefile.in
 INSTALL
 aclocal.m4
 ar-lib
-config.*
+/config.*
 configure
 depcomp
 install-sh
