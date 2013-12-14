@@ -34,6 +34,11 @@
 
 #include "freefare.h"
 
+#ifdef __cplusplus
+    extern "C" {
+#endif // __cplusplus
+
+
 struct pcsc_context {
 	SCARDCONTEXT context;
 	LPSTR readers;
@@ -45,5 +50,10 @@ LONG		 pcsc_list_devices(struct pcsc_context* context, LPSTR* string);
 
 MifareTag	*freefare_get_tags_pcsc (struct pcsc_context *context, const char *reader);
 MifareTag	 freefare_tag_new_pcsc(struct pcsc_context *context, const char *reader);
+
+#ifdef __cplusplus
+    }
+#endif // __cplusplus
+
 
 #endif
