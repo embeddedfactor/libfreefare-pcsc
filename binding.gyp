@@ -33,14 +33,14 @@
             "<(freefare_src)",
             "/System/Library/Frameworks/PCSC.framework/Headers"
           ],
-          "libraries": ["-framework", "PCSC"],
+          "libraries": ["$(SDKROOT)/System/Library/Frameworks/PCSC.framework"],
           "direct_dependent_settings": {
             "include_dirs": [
               "contrib/macos",
               "<(freefare_src)",
               "/System/Library/Frameworks/PCSC.framework/Headers"
             ],
-            "libraries": ["-framework", "PCSC"]
+            "libraries": ["$(SDKROOT)/System/Library/Frameworks/PCSC.framework"]
           }
         }],
         ["OS=='win'", {
