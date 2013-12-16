@@ -54,6 +54,10 @@
               "contrib/win32",
               "<(freefare_src)",
               "C:\OpenSSL-Win32/include"
+            ],
+            "libraries": [
+              "-lWinSCard",
+              "-lC:\OpenSSL-Win32\include\lib\libeay32.lib"
             ]
           }
         }]
