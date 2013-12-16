@@ -3,6 +3,7 @@
 *.lo
 *.Plo
 *.pc
+/build
 */.deps/
 */.libs/
 autom4te.cache/
