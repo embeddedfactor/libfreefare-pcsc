@@ -22,8 +22,8 @@
             "include_dirs": [
               "contrib/linux",
               "<(freefare_src)",
-              "/usr/include",
-              "/usr/local/include"
+              "/usr/include/PCSC",
+              "/usr/local/include/PCSC"
             ],
             "libraries": ["-lpcsclite"]
           }
