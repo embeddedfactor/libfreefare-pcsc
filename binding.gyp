@@ -13,10 +13,11 @@
           "include_dirs": [
             "contrib/linux",
             "<(freefare_src)",
-            "/usr/include",
-            "/usr/local/include"
+            "/usr/include/PCSC/",
+            "/usr/local/include/PCSC/"
           ],
           "libraries": ["-lpcsclite"],
+          "cflags": ["-std=c99"],
           "direct_dependent_settings": {
             "include_dirs": [
               "contrib/linux",
@@ -86,7 +87,7 @@
         "-fPIC",
         "-fno-strict-aliasing",
         "-fno-exceptions",
-        "-pedantic",
+        #"-pedantic",
       ],
       'msvs_settings': {
         'VCCLCompilerTool': {

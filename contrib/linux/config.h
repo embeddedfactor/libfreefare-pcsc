@@ -2,17 +2,17 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* Define to 1 if you have the <byteswap.h> header file. */
-/* #undef HAVE_BYTESWAP_H */
+#define HAVE_BYTESWAP_H 1
 
 /* Define to 1 if you have the <CoreFoundation/CoreFoundation.h> header file.
    */
-#define HAVE_COREFOUNDATION_COREFOUNDATION_H 1
+/* #undef HAVE_COREFOUNDATION_COREFOUNDATION_H */
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #define HAVE_DLFCN_H 1
 
 /* Define to 1 if you have the <endian.h> header file. */
-/* #undef HAVE_ENDIAN_H */
+#define HAVE_ENDIAN_H 1
 
 /* Define to 1 if you have the `htole32' function. */
 /* #undef HAVE_HTOLE32 */
@@ -52,7 +52,7 @@
 #define HAVE_PCSC 1
 
 /* Define to 1 if you have the `pow' function. */
-#define HAVE_POW 1
+/* #undef HAVE_POW */
 
 /* Define to 1 if your system has a GNU libc compatible `realloc' function,
    and to 0 otherwise. */
