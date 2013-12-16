@@ -6,10 +6,10 @@
 
 /* Define to 1 if you have the <CoreFoundation/CoreFoundation.h> header file.
    */
-#define HAVE_COREFOUNDATION_COREFOUNDATION_H 1
+/* #undef HAVE_COREFOUNDATION_COREFOUNDATION_H */
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
-#define HAVE_DLFCN_H 1
+/* #undef HAVE_DLFCN_H */
 
 /* Define to 1 if you have the <endian.h> header file. */
 /* #undef HAVE_ENDIAN_H */
