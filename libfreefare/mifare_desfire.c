@@ -193,7 +193,7 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
   { /* pcsc branch */ \
 		SCARD_IO_REQUEST __pcsc_rcv_pci; \
 		DWORD __pcsc_recv_len = __##res##_size + 1; \
-		if (SCARD_S_SUCCESS != SCardTransmit(tag->hCard, &tag->pioSendPci, __msg, __len, &__pcsc_rcv_pci, __res, &__pcsc_recv_len)) { \
+		if (SCARD_S_SUCCESS != SCardTransmit(tag->hCard, &tag->pioSendPci, __msg, __len, NULL /*&__pcsc_rcv_pci*/, __res, &__pcsc_recv_len)) { \
 			return errno = EIO, -1; \
 		} \
 		_res = __pcsc_recv_len; \
@@ -274,7 +274,7 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
   { /* pcsc branch */ \
 		SCARD_IO_REQUEST __pcsc_rcv_pci; \
 		DWORD __pcsc_recv_len = __##res##_size + 1; \
-		if (SCARD_S_SUCCESS != SCardTransmit(tag->hCard, &tag->pioSendPci, __msg, __len, &__pcsc_rcv_pci, __res, &__pcsc_recv_len)) { \
+		if (SCARD_S_SUCCESS != SCardTransmit(tag->hCard, &tag->pioSendPci, __msg, __len, NULL/*&__pcsc_rcv_pci*/, __res, &__pcsc_recv_len)) { \
 			return errno = EIO, -1; \
 		} \
 		_res = __pcsc_recv_len; \

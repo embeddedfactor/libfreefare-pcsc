@@ -152,7 +152,7 @@ freefare_tag_new_pcsc (struct pcsc_context *context, const char *reader)
 
     /* get and card uid */
     retlen = sizeof(ret);
-    err = SCardTransmit(hCard, &sendpci, buf, sizeof(buf), &ioreq, ret, &retlen);
+    err = SCardTransmit(hCard, &sendpci, buf, sizeof(buf), NULL /*&ioreq*/, ret, &retlen);
     if (err)
     {
 	return NULL;
