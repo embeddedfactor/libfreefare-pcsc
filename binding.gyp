@@ -45,20 +45,34 @@
           }
         }],
         ["OS=='win'", {
+          'conditions': [
+            # "openssl_root" is the directory on Windows of the OpenSSL files.
+            # Check the "target_arch" variable to set good default values for
+            # both 64-bit and 32-bit builds of the module.
+            ['target_arch=="x64"', {
+              'variables': {
+                'openssl_root%': 'C:/OpenSSL-Win64'
+              },
+            }, {
+              'variables': {
+                'openssl_root%': 'C:/OpenSSL-Win32'
+              },
+            }],
+          ],
           "include_dirs": [
             "contrib/win32",
             "<(freefare_src)",
-            "C:\OpenSSL-Win32/include"
+            "<(openssl_root)/include"
           ],
           "direct_dependent_settings": {
             "include_dirs": [
               "contrib/win32",
               "<(freefare_src)",
-              "C:\OpenSSL-Win32\include"
+              "<(openssl_root)\include"
             ],
             "libraries": [
               "-lWinSCard",
-              "-lC:\OpenSSL-Win32\lib\libeay32.lib"
+              "-l<(openssl_root)\lib\libeay32.lib"
             ]
           }
         }]
