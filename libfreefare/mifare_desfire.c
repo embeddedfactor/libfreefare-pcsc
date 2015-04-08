@@ -385,7 +385,7 @@ mifare_desfire_connect (MifareTag tag)
     if(NULL != tag->device) // nfc way
 #endif
 #ifdef HAVE_LIBNFC
-	{
+	  {
     nfc_target pnti;
     nfc_modulation modulation = {
 	.nmt = NMT_ISO14443A,
@@ -407,6 +407,7 @@ mifare_desfire_connect (MifareTag tag)
 	    errno = EIO;
 	    return -1;
 	}
+  }
     }
 #endif
 #if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
