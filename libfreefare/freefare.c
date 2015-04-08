@@ -20,9 +20,23 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "config.h"
+
+#ifdef HAVE_LIBNFC
+#include <nfc/nfc.h>
 #include <freefare.h>
+#endif
+#ifdef HAVE_PCSC
+#include "freefare_pcsc.h"
+#endif
+
+#include <reader.h>
 
 #include "freefare_internal.h"
+
+#ifdef HAVE_PCSC
+#include "freefare_pcsc_tags.h"
+#endif
 
 #define MAX_CANDIDATES 16
 
@@ -36,12 +50,17 @@ struct supported_tag supported_tags[] = {
     { CLASSIC_4K,   "Mifare Classic 4k",            0x18, 0, 0, { 0x00 }, NULL },
     { CLASSIC_4K,   "Mifare Classic 4k (Emulated)", 0x38, 0, 0, { 0x00 }, NULL },
     { DESFIRE,      "Mifare DESFire",               0x20, 5, 4, { 0x75, 0x77, 0x81, 0x02 /*, 0xXX */ }, NULL},
-    { DESFIRE,      "Cyanogenmod card emulation",   0x60, 4, 3, { 0x78, 0x33, 0x88 /*, 0xXX */ }, NULL},
+	{ DESFIRE,      "Cyanogenmod card emulation",   0x60, 4, 3, { 0x78, 0x33, 0x88 /*, 0xXX */ }, NULL},
     { DESFIRE,      "Android HCE",                  0x60, 4, 3, { 0x78, 0x80, 0x70 /*, 0xXX */ }, NULL},
+#if (!defined(is_mifare_ultralightc_on_reader))
+    { ULTRALIGHT_C, "Mifare UltraLightC",           0x00, 0, 0, { 0x00 }, NULL },
+#else
     { ULTRALIGHT_C, "Mifare UltraLightC",           0x00, 0, 0, { 0x00 }, is_mifare_ultralightc_on_reader },
+#endif
     { ULTRALIGHT,   "Mifare UltraLight",            0x00, 0, 0, { 0x00 }, NULL },
 };
 
+#ifdef HAVE_LIBNFC
 /*
  * Automagically allocate a MifareTag given a device and target info.
  */
@@ -99,8 +118,148 @@ freefare_tag_new (nfc_device *device, nfc_iso14443a_info nai)
 
     return tag;
 }
+#endif
+#ifdef HAVE_PCSC
+MifareTag
+freefare_tag_new_pcsc (struct pcsc_context *context, const char *reader)
+{
+    struct supported_tag *tag_info = NULL;
+    enum mifare_tag_type tagtype;
+    bool found = false;
+    uint8_t buf[] = { 0xFF, 0xCA, 0x00, 0x00, 0x00 };
+    uint8_t ret[12];
+    unsigned char pbAttr[MAX_ATR_SIZE];
+    unsigned int k;
+    char crc = 0x00;
+    size_t size;
+    MifareTag tag;
+    LONG err;
+    DWORD atrlen = sizeof(pbAttr);
+    DWORD dwActiveProtocol;
+    DWORD retlen;
+    SCARDHANDLE hCard;
+    SCARD_IO_REQUEST sendpci;
+    SCARD_IO_REQUEST ioreq;
 
-
+    err = SCardConnect(context->context, reader, SCARD_SHARE_SHARED, 
+			SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1, &hCard, &dwActiveProtocol);
+    if(err)
+	return NULL;
+
+    switch (dwActiveProtocol)
+    {
+	case SCARD_PROTOCOL_T0: sendpci = *SCARD_PCI_T0;
+	     break;
+	case SCARD_PROTOCOL_T1: sendpci = *SCARD_PCI_T1;
+	     break;
+    }
+
+    /* get and card uid */
+    retlen = sizeof(ret);
+    err = SCardTransmit(hCard, &sendpci, buf, sizeof(buf), NULL /*&ioreq*/, ret, &retlen);
+    if (err)
+    {
+	return NULL;
+    }
+
+    err = SCardGetAttrib ( hCard , SCARD_ATTR_ATR_STRING, (unsigned char *) &pbAttr, &atrlen );
+    if (err)
+    {
+	return NULL;
+    }
+
+    found = false;
+    for (k = 0; pcsc_supported_atrs[k].len != 0; k++){
+	if (atrlen != pcsc_supported_atrs[k].len) { 
+	    continue;
+	}
+	if ( pcsc_supported_atrs[k].mask == NULL ){
+	    /* no bitmask here */
+	    if ( ! memcmp(pcsc_supported_atrs[k].tag ,pbAttr ,atrlen) ) {
+		tagtype = pcsc_supported_atrs[k].type;
+		found = true;
+		break;
+	    }
+	} else {
+	    /* bitmask case */
+	    int c = 0;
+	    for (c = 0; c < pcsc_supported_atrs[k].len; c++){
+		if((pcsc_supported_atrs[k].tag[c] & pcsc_supported_atrs[k].mask[c]) != (pbAttr[c] & pcsc_supported_atrs[k].mask[c])){
+		    break;
+		}
+	    }
+	    if (c == pcsc_supported_atrs[k].len) {
+		tagtype = pcsc_supported_atrs[k].type;
+		found = true;
+		break;
+	    }
+	}
+    }	
+    if (!found) { 
+	return NULL;
+    }
+
+    found = false;
+    for (size = 0; size < sizeof (supported_tags) / sizeof (struct supported_tag); size++) {
+	if(supported_tags[size].type == tagtype) {
+	    tag_info = &(supported_tags[size]);
+	    found = true;
+	    break;
+	}
+    }
+
+    if(!found)
+	return NULL;
+
+    for (k = 1 /*! 1. Byte wird ignoriert*/ ; k < atrlen; k++ )
+    {
+	crc ^= pbAttr[k];
+    }
+    if (crc)
+    	return NULL;
+
+    /* Allocate memory for the found MIFARE target */
+    switch (tag_info->type) {
+    case CLASSIC_1K:
+    case CLASSIC_4K:
+	return NULL;
+	/* classic tags not yet supported with PCSC */
+	/* tag = mifare_classic_tag_new (); */
+	break;
+    case DESFIRE:
+	tag = mifare_desfire_tag_new ();
+	break;
+    case ULTRALIGHT:
+    case ULTRALIGHT_C:
+	return NULL;
+	/* ultralight tags not yet supported with PCSC */
+	/* tag = mifare_ultralight_tag_new (); */
+	break;
+    }
+
+    if (!tag)
+	return NULL;
+
+    /*
+     * Initialize common fields
+     * (Target specific fields are initialized in mifare_*_tag_new())
+     */
+#ifdef HAVE_LIBNFC
+    memcpy(tag->info.abtUid, ret, retlen - 2);
+    tag->info.szUidLen = retlen - 2;
+    tag->device = NULL;
+#endif
+    tag->hContext = context->context;
+    tag->hCard = hCard;
+    tag->active = 0;
+    tag->tag_info = tag_info;
+    FILL_SZREADER(tag, reader);
+
+    tag->lastPCSCerror = SCardDisconnect(tag->hCard, SCARD_LEAVE_CARD);
+
+    return tag;
+}
+#endif
 /*
  * MIFARE card common functions
  *
@@ -108,7 +267,7 @@ freefare_tag_new (nfc_device *device, nfc_iso14443a_info nai)
  * communication with a MIFARE card, and perform required cleannups after using
  * the targets.
  */
-
+#ifdef HAVE_LIBNFC
 /*
  * Get a list of the MIFARE targets near to the provided NFC initiator.
  *
@@ -163,7 +322,34 @@ freefare_get_tags (nfc_device *device)
 
     return tags;
 }
+#endif
+#ifdef HAVE_PCSC
+/*
+ * Get a list of the MIFARE targets near to the provided NFC initiator.
+ * (Usally its just one tag, because pcsc can not detect more)
+ * phContext must be established with SCardEstablishContext before 
+ * calling this function.
+ * mszReader is the Name of the SmartCard Reader to use
+ * The list has to be freed using the freefare_free_tags() function.
+ */
+MifareTag *
+freefare_get_tags_pcsc (struct pcsc_context *context, const char *reader)
+{
+    MifareTag *tags = NULL;
+    
+    tags = (MifareTag *)malloc(2*sizeof (MifareTag));
+    if(!tags)
+    {
+	return NULL;
+    }
+    tags[0] = freefare_tag_new_pcsc(context, reader);
+    tags[1] = NULL;
+    if(tags[0] == NULL)
+    	return NULL;
 
+    return tags;
+}
+#endif
 /*
  * Returns the type of the provided tag.
  */
@@ -188,20 +374,11 @@ freefare_get_tag_friendly_name (MifareTag tag)
 char *
 freefare_get_tag_uid (MifareTag tag)
 {
-    char *res;
-    if ((res = malloc (2 * tag->info.szUidLen + 1))) {
-	for (size_t i =0; i < tag->info.szUidLen; i++)
-	    snprintf (res + 2*i, 3, "%02x", tag->info.abtUid[i]);
-    }
-    return res;
-}
-
-/*
- * Returns true if last selected tag is still present.
- */
-bool freefare_selected_tag_is_present(nfc_device *device)
-{
-    return (nfc_initiator_target_is_present(device, NULL) == NFC_SUCCESS);
+    size_t i;
+   	char *res = (char *)malloc (2 * tag->info.szUidLen + 1);
+   	for (i =0; i < tag->info.szUidLen; i++)
+       	snprintf (res + 2*i, 3, "%02x", tag->info.abtUid[i]);
+   	return res;
 }
 
 /*
@@ -211,19 +388,21 @@ void
 freefare_free_tag (MifareTag tag)
 {
     if (tag) {
-        switch (tag->tag_info->type) {
-        case CLASSIC_1K:
-        case CLASSIC_4K:
-            mifare_classic_tag_free (tag);
-            break;
-        case DESFIRE:
-            mifare_desfire_tag_free (tag);
-            break;
-        case ULTRALIGHT:
-        case ULTRALIGHT_C:
-            mifare_ultralight_tag_free (tag);
-            break;
+        switch (tag->tag_info->type) 
+	{
+	    case CLASSIC_1K:
+	    case CLASSIC_4K:
+		mifare_classic_tag_free (tag);
+	    	break;
+	    case DESFIRE:
+		mifare_desfire_tag_free (tag);
+	    	break;
+	    case ULTRALIGHT:
+	    case ULTRALIGHT_C:
+		mifare_ultralight_tag_free (tag);
+		break;
         }
+	FREE_SZREADER(tag->szReader);
     }
 }
 
@@ -231,17 +410,47 @@ const char *
 freefare_strerror (MifareTag tag)
 {
     const char *p = "Unknown error";
-    if (nfc_device_get_last_error (tag->device) < 0) {
-      p = nfc_strerror (tag->device);
-    } else {
-      if (tag->tag_info->type == DESFIRE) {
-        if (MIFARE_DESFIRE (tag)->last_pcd_error) {
-          p = mifare_desfire_error_lookup (MIFARE_DESFIRE (tag)->last_pcd_error);
-        } else if (MIFARE_DESFIRE (tag)->last_picc_error) {
-          p = mifare_desfire_error_lookup (MIFARE_DESFIRE (tag)->last_picc_error);
-        }
-      }
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+    if(tag->device != NULL) // we use libnfc
+#endif
+#ifdef HAVE_LIBNFC
+    {
+	if (nfc_device_get_last_error (tag->device) < 0) {
+	    p = nfc_strerror (tag->device);
+	} else {
+	    if (tag->tag_info->type == DESFIRE) {
+	    	if (MIFARE_DESFIRE (tag)->last_pcd_error) {
+		    p = mifare_desfire_error_lookup (MIFARE_DESFIRE (tag)->last_pcd_error);
+	    	} else if (MIFARE_DESFIRE (tag)->last_picc_error) {
+	            p = mifare_desfire_error_lookup (MIFARE_DESFIRE (tag)->last_picc_error);
+	    	}
+	    }
+	}
     }
+#endif
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+    else // we use the pcsc protocol
+#endif
+#ifdef HAVE_PCSC
+    {
+	if (tag->lastPCSCerror != 0){
+#ifdef _WIN32
+    return "Internal PCSC error";
+#else
+	    p = (const char*) pcsc_stringify_error(tag->lastPCSCerror);
+    	    return p;
+#endif
+	} else {
+	     if (tag->tag_info->type == DESFIRE) {
+		if (MIFARE_DESFIRE (tag)->last_pcd_error) {
+		    p = mifare_desfire_error_lookup (MIFARE_DESFIRE (tag)->last_pcd_error);
+		} else if (MIFARE_DESFIRE (tag)->last_picc_error) {
+		    p = mifare_desfire_error_lookup (MIFARE_DESFIRE (tag)->last_picc_error);
+		}   
+	    }   
+	}
+    }
+#endif
     return p;
 }
 
@@ -263,15 +472,80 @@ freefare_perror (MifareTag tag, const char *string)
 void
 freefare_free_tags (MifareTag *tags)
 {
+  int i;
     if (tags) {
-	for (int i=0; tags[i]; i++) {
+	for (i=0; tags[i]; i++) {
 	    freefare_free_tag(tags[i]);
 	}
 	free (tags);
     }
 }
 
+/*
+ * create context for pcsc readers
+ */
+#ifdef HAVE_PCSC
+void
+pcsc_init(struct pcsc_context** context)
+{
+	LONG err;
+	struct pcsc_context *con =  (struct pcsc_context *)malloc(sizeof(struct pcsc_context));
+	err = SCardEstablishContext(SCARD_SCOPE_SYSTEM, NULL, NULL, &con->context);
+	if (err < 0)
+	{
+		*context = NULL;
+		return;
+	}
+	*context = con;
+}
 
+/*
+ * destroy context for pcsc readers
+ */
+void
+pcsc_exit(struct pcsc_context* context)
+{
+	if (context->readers)
+    #ifndef __APPLE__
+		SCardFreeMemory(context->context, context->readers);
+    #endif
+	SCardReleaseContext(context->context);
+}
+
+/*
+ * list pcsc devices
+ */
+
+LONG
+pcsc_list_devices(struct pcsc_context* context, LPSTR *string)
+{
+    LONG err;
+    LPSTR str = NULL;
+    DWORD size;
+    static char empty[] = "\0";
+
+    err = SCardListReaders(context->context, NULL, NULL, &size);
+    str = (char *)malloc(sizeof(char) * size);
+    if (!str)
+    {
+    	context->readers = NULL;
+	    *string = empty;
+    	return SCARD_E_NO_MEMORY;
+    }
+    err = SCardListReaders(context->context, NULL, str, &size);
+    if (err != SCARD_S_SUCCESS)
+    {
+      context->readers = NULL;
+      *string = empty;
+    }
+    else
+    {
+      *string = str;
+      context->readers = str;
+    }
+    return err;
+}
+#endif
 /*
  * Low-level API
  */

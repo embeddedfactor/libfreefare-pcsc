@@ -29,7 +29,12 @@
 #include <string.h>
 #include <stdlib.h>
 
+#ifdef HAVE_LIBNFC
 #include <freefare.h>
+#endif
+#ifdef HAVE_PCSC
+#include "freefare_pcsc.h"
+#endif
 #include "freefare_internal.h"
 
 #define FIRST_SECTOR 1
@@ -138,7 +143,7 @@ mifare_application_alloc (Mad mad, MadAid aid, size_t size)
 	if (sector_map[i])
 	    n++;
 
-    if (!(res = malloc (sizeof (*res) * (n+1))))
+    if (!(res = (MifareClassicSectorNumber *)malloc (sizeof (*res) * (n+1))))
 	return NULL;
 
     n = 0;
@@ -159,7 +164,7 @@ mifare_application_alloc (Mad mad, MadAid aid, size_t size)
  * Remove an application from a MAD.
  */
 int
-mifare_application_free (Mad mad, MadAid aid)
+mifare_application_free (Mad mad, const MadAid aid)
 {
     MifareClassicSectorNumber *sectors = mifare_application_find (mad, aid);
     MifareClassicSectorNumber *p = sectors;
@@ -193,7 +198,7 @@ mifare_application_find (Mad mad, MadAid aid)
     size_t res_count = count_aids (mad, aid);
 
     if (res_count)
-	res = malloc (sizeof (*res) * (res_count + 1));
+	res = (MifareClassicSectorNumber *)malloc (sizeof (*res) * (res_count + 1));
 
     size_t r = FIRST_SECTOR, w = 0;
     if (res) {

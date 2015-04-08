@@ -23,6 +23,8 @@
 #include "config.h"
 
 #include <openssl/des.h>
+#include <stdlib.h>
+#include <stdint.h>
 
 /*
  * Endienness macros
@@ -51,14 +53,16 @@
 #  define be16toh(x) betoh16(x)
 #endif
 
-#if !defined(le32toh) && defined(CFSwapInt32LittleToHost)
+//#if !defined(le32toh) && defined(CFSwapInt32LittleToHost)
+#if defined(__COREFOUNDATION_CFBYTEORDER__)
 #  define be32toh(x) CFSwapInt32BigToHost(x)
 #  define htobe32(x) CFSwapInt32HostToBig(x)
 #  define le32toh(x) CFSwapInt32LittleToHost(x)
 #  define htole32(x) CFSwapInt32HostToLittle(x)
 #endif
 
-#if !defined(le16toh) && defined(CFSwapInt16LittleToHost)
+//#if !defined(le16toh) && defined(CFSwapInt16LittleToHost)
+#if defined(__COREFOUNDATION_CFBYTEORDER__)
 #  define be16toh(x) CFSwapInt16BigToHost(x)
 #  define htobe16(x) CFSwapInt16HostToBig(x)
 #  define le16toh(x) CFSwapInt16LittleToHost(x)
@@ -91,6 +95,21 @@
 #    define htole16(x) (bswap_16(x))
 #    define le16toh(x) (bswap_16(x))
 #  endif
+#endif
+
+#if _WIN32
+#  define be32toh(x) _byteswap_ulong(x)
+#  define htobe32(x) _byteswap_ulong(x)
+#  define le32toh(x) (x)
+#  define htole32(x) (x)
+#  define be16toh(x) (_byteswap_ushort(x))
+#  define htobe16(x) (_byteswap_ushort(x))
+#  define htole16(x) (x)
+#  define le16toh(x) (x)
+
+#  define MAX_ATR_SIZE 33
+
+#  define snprintf _snprintf
 #endif
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
@@ -172,7 +191,11 @@ struct supported_tag {
     uint8_t ATS_min_length;
     uint8_t ATS_compare_length;
     uint8_t ATS[5];
+#ifdef HAVE_LIBNFC
     bool (*check_tag_on_reader) (nfc_device *, nfc_iso14443a_info);
+#else
+    void *x;
+#endif
 };
 
 /*
@@ -184,11 +207,49 @@ struct supported_tag {
  * mifare_*_connect() function.
  */
 struct mifare_tag {
+#ifdef HAVE_LIBNFC
     nfc_device *device;
     nfc_iso14443a_info info;
+#endif
+    // PCSC things
+#ifdef HAVE_PCSC
+#ifndef HAVE_LIBNFC
+    struct {
+  size_t  szUidLen;
+  uint8_t  abtUid[10];
+    } info;
+#endif
+    SCARDCONTEXT 	hContext;
+    SCARDHANDLE		hCard;
+    SCARD_IO_REQUEST	pioSendPci;
+    LONG		lastPCSCerror;
+#endif
+    char*		szReader;
+    // End of PCSC things
     const struct supported_tag *tag_info;
     int active;
 };
+
+#define FILL_SZREADER(tag, szRd) \
+    do { \
+	tag->szReader = (char *)malloc(strlen(szRd) * sizeof(char) + 1); \
+	if(NULL == tag->szReader) \
+	{ \
+	     fprintf(stderr, "malloc failed !! (in freefare_get_tags_pcsc)\n"); \
+	} \
+	strcpy(tag->szReader, (const char *)szRd); \
+    } while(0) 
+
+#define FREE_SZREADER(szRd) \
+    do { \
+	if(NULL != szRd) \
+	{ \
+    	    free(szRd); \
+	    szRd = NULL; \
+	} \
+    } while (0)
+
+
 
 struct mifare_classic_tag {
     struct mifare_tag __tag;
@@ -211,14 +272,16 @@ struct mifare_desfire_aid {
     uint8_t data[3];
 };
 
-struct mifare_desfire_key {
-    uint8_t data[24];
-    enum {
+enum mifare_desfire_key_type {
 	T_DES,
 	T_3DES,
 	T_3K3DES,
 	T_AES
-    } type;
+};
+
+struct mifare_desfire_key {
+    uint8_t data[24];
+    enum mifare_desfire_key_type type;
     DES_key_schedule ks1;
     DES_key_schedule ks2;
     DES_key_schedule ks3;
@@ -227,6 +290,10 @@ struct mifare_desfire_key {
     uint8_t aes_version;
 };
 
+enum mifare_desfire_tag_authentication_scheme { 
+  AS_LEGACY, 
+  AS_NEW 
+};
 struct mifare_desfire_tag {
     struct mifare_tag __tag;
 
@@ -234,7 +301,7 @@ struct mifare_desfire_tag {
     uint8_t last_internal_error;
     uint8_t last_pcd_error;
     MifareDESFireKey session_key;
-    enum { AS_LEGACY, AS_NEW } authentication_scheme;
+    enum mifare_desfire_tag_authentication_scheme authentication_scheme;
     uint8_t authenticated_key_no;
     uint8_t ivect[MAX_CRYPTO_BLOCK_SIZE];
     uint8_t cmac[16];
@@ -314,19 +381,29 @@ struct mifare_ultralight_tag {
 /*
  * Initialise a buffer named buffer_name of size bytes.
  */
+#ifdef _WIN32
 #define BUFFER_INIT(buffer_name, size) \
-    uint8_t buffer_name[size]; \
     size_t __##buffer_name##_size = size; \
-    size_t __##buffer_name##_n = 0
-
+    size_t __##buffer_name##_n = 0; \
+    uint8_t *buffer_name = (uint8_t *)malloc(sizeof(uint8_t)*size)
+#define BUFFER_FREE(buffer_name) \
+    free(buffer_name)
+#else
+#define BUFFER_INIT(buffer_name, size) \
+    size_t __##buffer_name##_size = size; \
+    size_t __##buffer_name##_n = 0; \
+    uint8_t buffer_name[size];
+#define BUFFER_FREE(buffer_name) \
+  /* Do nothing we use the stack! */
+#endif
 /*
  * Create a wrapper for an existing buffer.
  * BEWARE!  It eats children!
  */
 #define BUFFER_ALIAS(buffer_name, origin, origin_size) \
-    uint8_t *buffer_name = (void *)origin; \
     size_t __##buffer_name##_size = origin_size; \
-    size_t __##buffer_name##_n = 0;
+    size_t __##buffer_name##_n = 0; \
+    uint8_t *buffer_name = (uint8_t *)origin;
 
 #define BUFFER_SIZE(buffer_name) (__##buffer_name##_n)
 
@@ -376,6 +453,29 @@ struct mifare_ultralight_tag {
 	memcpy (buffer + __##buffer##_n, &data, data_size); \
 	__##buffer##_n += data_size; \
     } while (0)
+#endif
+
+#if (!defined(HAVE_LIBNFC)) && (defined(HAVE_PCSC))
+inline void
+iso14443a_crc(uint8_t *pbtData, size_t szLen, uint8_t *pbtCrc)
+{
+  uint8_t  bt;
+  uint32_t wCrc = 0x6363;
+
+  do {
+    bt = *pbtData++;
+    bt = (bt ^ (uint8_t)(wCrc & 0x00FF));
+    bt = (bt ^ (bt << 4));
+    wCrc = (wCrc >> 8) ^ ((uint32_t) bt << 8) ^ ((uint32_t) bt << 3) ^ ((uint32_t) bt >> 4);
+  } while (--szLen);
+
+  *pbtCrc++ = (uint8_t)(wCrc & 0xFF);
+  *pbtCrc = (uint8_t)((wCrc >> 8) & 0xFF);
+}
+
+#define iso14443a_crc_append(pbtData, szLen) \
+  iso14443a_crc(pbtData, szLen, pbtData + szLen)
+
 #endif
 
 #endif /* !__FREEFARE_INTERNAL_H__ */

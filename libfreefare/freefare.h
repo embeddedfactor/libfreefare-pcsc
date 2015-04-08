@@ -24,7 +24,11 @@
 
 #include <stdint.h>
 
+#ifndef __FREEFARE_PCSC_H__
+// For backwards compatibility:
+// If we don't include the pcsc header we probably want libnfc
 #include <nfc/nfc.h>
+#endif
 
 #ifdef __cplusplus
     extern "C" {
@@ -52,14 +56,19 @@ typedef struct mifare_desfire_key *MifareDESFireKey;
 typedef uint8_t MifareUltralightPageNumber;
 typedef unsigned char MifareUltralightPage[4];
 
+#ifndef __FREEFARE_PCSC_H__
 MifareTag	*freefare_get_tags (nfc_device *device);
 MifareTag	 freefare_tag_new (nfc_device *device, nfc_iso14443a_info nai);
+#endif
+
 enum mifare_tag_type freefare_get_tag_type (MifareTag tag);
-const char	*freefare_get_tag_friendly_name (MifareTag tag);
-char		*freefare_get_tag_uid (MifareTag tag);
-void		 freefare_free_tag (MifareTag tag);
-void		 freefare_free_tags (MifareTag *tags);
-bool		 freefare_selected_tag_is_present(nfc_device *device);
+const char          *freefare_get_tag_friendly_name (MifareTag tag);
+char                *freefare_get_tag_uid (MifareTag tag);
+void                 freefare_free_tag (MifareTag tag);
+void                 freefare_free_tags (MifareTag *tags);
+#ifdef HAVE_LIBNFC
+bool		 		 freefare_selected_tag_is_present(nfc_device *device);
+#endif // HAVE_LIBFC
 
 const char	*freefare_strerror (MifareTag tag);
 int		 freefare_strerror_r (MifareTag tag, char *buffer, size_t len);
@@ -72,7 +81,9 @@ int		 mifare_ultralight_read (MifareTag tag, const MifareUltralightPageNumber pa
 int		 mifare_ultralight_write (MifareTag tag, const MifareUltralightPageNumber page, const MifareUltralightPage data);
 
 int		 mifare_ultralightc_authenticate (MifareTag tag, const MifareDESFireKey key);
+#ifndef __FREEFARE_PCSC_H__
 bool		 is_mifare_ultralightc_on_reader (nfc_device *device, nfc_iso14443a_info nai);
+#endif
 
 typedef unsigned char MifareClassicBlock[16];
 
@@ -354,8 +365,8 @@ int		 mifare_desfire_set_configuration (MifareTag tag, bool disable_format, bool
 int		 mifare_desfire_set_default_key (MifareTag tag, MifareDESFireKey key);
 int		 mifare_desfire_set_ats (MifareTag tag, uint8_t *ats);
 int		 mifare_desfire_get_card_uid (MifareTag tag, char **uid);
-int		 mifare_desfire_get_file_ids (MifareTag tag, uint8_t **files, size_t *count);
-int		 mifare_desfire_get_iso_file_ids (MifareTag tag, uint16_t **files, size_t *count);
+int		 mifare_desfire_get_file_ids (MifareTag tag, uint8_t *files[], size_t *count);
+int		 mifare_desfire_get_iso_file_ids (MifareTag tag, uint16_t *files[], size_t *count);
 int		 mifare_desfire_get_file_settings (MifareTag tag, uint8_t file_no, struct mifare_desfire_file_settings *settings);
 int		 mifare_desfire_change_file_settings (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights);
 int		 mifare_desfire_create_std_data_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t file_size);

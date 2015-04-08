@@ -16,13 +16,18 @@
  * 
  * $Id$
  */
-
+#include "config.h"
 
 #include <sys/types.h>
 
 #include <stdlib.h>
 
+#ifdef HAVE_LIBNFC
 #include <freefare.h>
+#endif
+#ifdef HAVE_PCSC
+#include "freefare_pcsc.h"
+#endif
 
 #include "freefare_internal.h"
 
