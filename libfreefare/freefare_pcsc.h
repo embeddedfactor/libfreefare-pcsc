@@ -25,7 +25,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__linux__)
 #include <PCSC/winscard.h>
 #include <PCSC/wintypes.h>
 #else
