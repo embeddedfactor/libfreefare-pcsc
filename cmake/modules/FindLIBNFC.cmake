@@ -10,7 +10,7 @@ message("libnfc install dir: " ${LIBNFC_INSTALL_DIR})
 find_path(LIBNFC_INCLUDE_DIRS NAMES nfc/nfc.h PATHS ${LIBNFC_INSTALL_DIR}/include)
 message("libnfc include dir found:  " ${LIBNFC_INCLUDE_DIRS})
 
-if(CMAKE_SYSTEM_NAME MATCHES ’Linux’)
+if(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
   find_library(LIBNFC_LIBRARIES libnfc.so PATHS ${LIBNFC_INSTALL_DIR}/lib)
 else()
   find_library(LIBNFC_LIBRARIES libnfc PATHS ${LIBNFC_INSTALL_DIR}/lib)
