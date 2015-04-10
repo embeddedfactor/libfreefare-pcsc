@@ -1,6 +1,6 @@
 {
   "variables": {
-    "freefare_url": "https://github.com/hackerhelmut/libfreefare-pcsc.git",
+    "freefare_url": "https://github.com/embeddedfactor/libfreefare-pcsc.git",
     "freefare_src": "libfreefare",
   },
   "targets": [
