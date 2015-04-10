@@ -6,7 +6,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/mo
 
 add_definitions("-std=c99")
 
-find_package(LIBNFC REQUIRED)
+#find_package(LIBNFC REQUIRED)
 find_package(OpenSSL REQUIRED)
 
 IF(WIN32)
@@ -26,8 +26,8 @@ endif(MINGW)
 message("CMAKE_C_FLAGS: " ${CMAKE_C_FLAGS})
 message("CMAKE_SHARED_LINKER_FLAGS: " ${CMAKE_SHARED_LINKER_FLAGS})
 
-include_directories(${LIBNFC_INCLUDE_DIRS} ${OPENSSL_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/contrib/libutil)
-set(LIBS ${LIBS} ${LIBNFC_LIBRARIES} ${OPENSSL_LIBRARIES})
+include_directories(${OPENSSL_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/contrib/libutil)
+set(LIBS ${LIBS} ${OPENSSL_LIBRARIES})
 
 option(WITH_DEBUG "Extra debug information is outputted when this is turned on" OFF)
 

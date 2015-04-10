@@ -58,11 +58,29 @@ AC_CHECK_LIB([crypto], [DES_ecb_encrypt], [], [AC_MSG_ERROR([Cannot find libcryp
 AC_CHECK_HEADERS([openssl/aes.h openssl/des.h openssl/rand.h], [], [AC_MSG_ERROR([Cannot find openssl headers.])])
 
 # Checks for pkg-config modules.
-LIBNFC_REQUIRED_VERSION="1.7.0"
-PKG_CHECK_MODULES([LIBNFC], [libnfc >= $LIBNFC_REQUIRED_VERSION], [], [AC_MSG_ERROR([libnfc >= $LIBNFC_REQUIRED_VERSION is mandatory.])])
+AC_ARG_WITH([libnfc], [AS_HELP_STRING([--without-libnfc],[Deactivate libnfc support])],[with_libnfc=false])
+AM_CONDITIONAL([HAVE_LIBNFC], [test x$with_libnfc != xfalse])
+AS_IF([test "x$with_libnfc" != xfalse],[
+  LIBNFC_REQUIRED_VERSION="1.7.0"
+  PKG_CHECK_MODULES([LIBNFC], [libnfc >= $LIBNFC_REQUIRED_VERSION], [
+    AC_DEFINE([HAVE_LIBNFC], [1], [libnfc is present])
+  ], [AC_MSG_ERROR([libnfc >= $LIBNFC_REQUIRED_VERSION is mandatory.])])
 
-PKG_CONFIG_REQUIRES="libnfc"
-AC_SUBST([PKG_CONFIG_REQUIRES])
+  PKG_CONFIG_REQUIRES="libnfc"
+  AC_SUBST([PKG_CONFIG_REQUIRES])
+])
+
+AC_ARG_WITH([pcsc], [AS_HELP_STRING([--without-pcsc],[Deactivate PCSC support])],[with_pcsc=false])
+AM_CONDITIONAL([HAVE_PCSC], [test x$with_pcsc != xfalse])
+AS_IF([test "x$with_pcsc" != xfalse],[
+  PKG_CHECK_MODULES([PCSC], [libpcsclite], [
+    AC_DEFINE([HAVE_PCSC], [1], [libpcsclite is present])
+  ])
+])
+
+AS_IF([test "x$with_libnfc$with_pcsc" = xfalsefalse],[
+  AC_MSG_ERROR([Either libnfc or PCSC are needed to use this library. Please activate at least one])
+])
 
 CUTTER_REQUIRED_VERSION=1.1.7
 m4_ifdef([AC_CHECK_CUTTER], [AC_CHECK_CUTTER([>= $CUTTER_REQUIRED_VERSION])], [ac_cv_use_cutter="no"])

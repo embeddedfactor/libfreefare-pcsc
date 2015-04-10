@@ -16,18 +16,21 @@
  * 
  * $Id$
  */
-
+#include "config.h"
 #include <stdlib.h>
 #include <string.h>
 
 #include <openssl/des.h>
 
+#ifdef HAVE_LIBNFC
 #include <freefare.h>
+#endif
+#ifdef HAVE_PCSC
+#include "freefare_pcsc.h"
+#endif
 #include "freefare_internal.h"
 
-static inline void update_key_schedules (MifareDESFireKey key);
-
-static inline void
+static void
 update_key_schedules (MifareDESFireKey key)
 {
     DES_set_key ((DES_cblock *)key->data, &(key->ks1));
@@ -40,9 +43,10 @@ update_key_schedules (MifareDESFireKey key)
 MifareDESFireKey
 mifare_desfire_des_key_new (const uint8_t value[8])
 {
+    int n;
     uint8_t data[8];
     memcpy (data, value, 8);
-    for (int n=0; n < 8; n++)
+    for (n=0; n < 8; n++)
 	data[n] &= 0xfe;
     return mifare_desfire_des_key_new_with_version (data);
 }
@@ -52,7 +56,7 @@ mifare_desfire_des_key_new_with_version (const uint8_t value[8])
 {
     MifareDESFireKey key;
 
-    if ((key = malloc (sizeof (struct mifare_desfire_key)))) {
+    if ((key = (struct mifare_desfire_key *)malloc (sizeof (struct mifare_desfire_key)))) {
 	key->type = T_DES;
 	memcpy (key->data, value, 8);
 	memcpy (key->data+8, value, 8);
@@ -64,11 +68,12 @@ mifare_desfire_des_key_new_with_version (const uint8_t value[8])
 MifareDESFireKey
 mifare_desfire_3des_key_new (const uint8_t value[16])
 {
+    int n;
     uint8_t data[16];
     memcpy (data, value, 16);
-    for (int n=0; n < 8; n++)
+    for (n=0; n < 8; n++)
 	data[n] &= 0xfe;
-    for (int n=8; n < 16; n++)
+    for (n=8; n < 16; n++)
 	data[n] |= 0x01;
     return mifare_desfire_3des_key_new_with_version (data);
 }
@@ -78,7 +83,7 @@ mifare_desfire_3des_key_new_with_version (const uint8_t value[16])
 {
     MifareDESFireKey key;
 
-    if ((key = malloc (sizeof (struct mifare_desfire_key)))) {
+    if ((key = (struct mifare_desfire_key *)malloc (sizeof (struct mifare_desfire_key)))) {
 	key->type = T_3DES;
 	memcpy (key->data, value, 16);
 	update_key_schedules (key);
@@ -89,9 +94,10 @@ mifare_desfire_3des_key_new_with_version (const uint8_t value[16])
 MifareDESFireKey
 mifare_desfire_3k3des_key_new (const uint8_t value[24])
 {
+    int n;
     uint8_t data[24];
     memcpy (data, value, 24);
-    for (int n=0; n < 8; n++)
+    for (n=0; n < 8; n++)
 	data[n] &= 0xfe;
     return mifare_desfire_3k3des_key_new_with_version (data);
 }
@@ -101,7 +107,7 @@ mifare_desfire_3k3des_key_new_with_version (const uint8_t value[24])
 {
     MifareDESFireKey key;
 
-    if ((key = malloc (sizeof (struct mifare_desfire_key)))) {
+    if ((key = (struct mifare_desfire_key *)malloc (sizeof (struct mifare_desfire_key)))) {
 	key->type = T_3K3DES;
 	memcpy (key->data, value, 24);
 	update_key_schedules (key);
@@ -120,7 +126,7 @@ mifare_desfire_aes_key_new_with_version (const uint8_t value[16], uint8_t versio
 {
     MifareDESFireKey key;
 
-    if ((key = malloc (sizeof (struct mifare_desfire_key)))) {
+    if ((key = (struct mifare_desfire_key *)malloc (sizeof (struct mifare_desfire_key)))) {
 	memcpy (key->data, value, 16);
 	key->type = T_AES;
 	key->aes_version = version;
@@ -131,9 +137,10 @@ mifare_desfire_aes_key_new_with_version (const uint8_t value[16], uint8_t versio
 uint8_t
 mifare_desfire_key_get_version (MifareDESFireKey key)
 {
+    int n;
     uint8_t version = 0;
 
-    for (int n = 0; n < 8; n++) {
+    for (n = 0; n < 8; n++) {
 	version |= ((key->data[n] & 1) << (7 - n));
     }
 
@@ -143,7 +150,8 @@ mifare_desfire_key_get_version (MifareDESFireKey key)
 void
 mifare_desfire_key_set_version (MifareDESFireKey key, uint8_t version)
 {
-    for (int n = 0; n < 8; n++) {
+    int n;
+    for (n = 0; n < 8; n++) {
 	uint8_t version_bit = ((version & (1 << (7-n))) >> (7-n));
 	key->data[n] &= 0xfe;
 	key->data[n] |= version_bit;

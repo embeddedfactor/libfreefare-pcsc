@@ -52,7 +52,12 @@
 #include <string.h>
 #include <stdint.h>
 
+#ifdef HAVE_LIBNFC
 #include <freefare.h>
+#endif
+#ifdef HAVE_PCSC
+#include "freefare_pcsc.h"
+#endif
 #include "freefare_internal.h"
 
 #define TLV_TERMINATOR 0xFE
@@ -73,6 +78,7 @@ tlv_encode (const uint8_t type, const uint8_t *istream, uint16_t isize, size_t *
 {
     uint8_t *res;
     off_t n = 0;
+    uint16_t size_be = 0;
 
     if (osize)
 	*osize = 0;
@@ -80,13 +86,13 @@ tlv_encode (const uint8_t type, const uint8_t *istream, uint16_t isize, size_t *
     if (isize == 0xffff) /* RFU */
 	return NULL;
 
-    if ((res = malloc (1 + ((isize > 254) ? 3 : 1) + isize + 1))) {
+    if ((res = (uint8_t *)malloc (1 + ((isize > 254) ? 3 : 1) + isize + 1))) {
 	/* type + size + payload + terminator */
 	res[n++] = type;
 
 	if (isize > 254) {
 	    res[n++] = 0xff;
-	    uint16_t size_be = htobe16 (isize);
+	    size_be = htobe16 (isize);
 	    memcpy (res + n, &size_be, sizeof (uint16_t));
 	    n += 2;
 	} else {
@@ -123,7 +129,7 @@ tlv_decode (const uint8_t *istream, uint8_t *type, uint16_t *size)
 	*size = fvs;
     }
 
-    if ((res = malloc (fvs))) {
+    if ((res = (uint8_t *)malloc (fvs))) {
 	memcpy (res, istream + 1 + fls, fvs);
     }
     return res;
@@ -211,7 +217,7 @@ tlv_append (uint8_t *a, uint8_t *b)
     size_t b_size = tlv_sequence_length (b);
     size_t new_size = a_size + b_size - 1;
 
-    if ((a = realloc (a, new_size))) {
+    if ((a = (uint8_t *)realloc (a, new_size))) {
 	memcpy (a + a_size - 1, b, b_size);
     }
 

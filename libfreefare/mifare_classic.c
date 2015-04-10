@@ -68,8 +68,12 @@
 #ifdef WITH_DEBUG
 #  include <libutil.h>
 #endif
-
+#ifdef HAVE_LIBNFC
 #include <freefare.h>
+#endif
+#ifdef HAVE_PCSC
+#include "freefare_pcsc.h"
+#endif
 #include "freefare_internal.h"
 
 #define MC_OK             0x0A
@@ -85,22 +89,87 @@
 
 #define CLASSIC_TRANSCEIVE(tag, msg, res) CLASSIC_TRANSCEIVE_EX(tag, msg, res, 0)
 
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
 #define CLASSIC_TRANSCEIVE_EX(tag, msg, res, disconnect) \
     do { \
 	errno = 0; \
 	DEBUG_XFER (msg, __##msg##_n, "===> "); \
 	int _res; \
-	if ((_res = nfc_initiator_transceive_bytes (tag->device, msg, __##msg##_n, res, __##res##_size, 0)) < 0) { \
-	    if (disconnect) { \
-		tag->active = false; \
+	if (tag->device != NULL) /* nfc way */  \
+	{ \
+	    if ((_res = nfc_initiator_transceive_bytes (tag->device, msg, __##msg##_n, res, __##res##_size, 0)) < 0)  \
+	    { \
+	    	if (disconnect) \
+		{ \
+		    tag->active = false; \
+	    	} \
+			if (_res == NFC_EMFCAUTHFAIL) \
+				return errno = EACCES, -1; \
+	        return errno = EIO, -1; \
 	    } \
-	    if (_res == NFC_EMFCAUTHFAIL) \
-		return errno = EACCES, -1; \
-	    return errno = EIO, -1; \
+	} \
+	else /* pcsc way */ \
+	{ \
+	    SCARD_IO_REQUEST __pcsc_rcv_pci; \
+	    DWORD __pcsc_recv_len = __##res##_size; \
+	    if (SCARD_S_SUCCESS != SCardTransmit(tag->hCard, SCARD_PCI_T0, msg, __##msg##_n, &__pcsc_rcv_pci, (LPBYTE)&_res, &__pcsc_recv_len)) \
+	    { \
+	    	if (disconnect) \
+		{ \
+		    tag->active = false; \
+	    	} \
+		return errno = EIO, -1; \
+	    } \
+	    _res = __pcsc_recv_len; \
 	} \
 	__##res##_n = _res; \
 	DEBUG_XFER (res, __##res##_n, "<=== "); \
     } while (0)
+
+#elif HAVE_LIBNFC
+#define CLASSIC_TRANSCEIVE_EX(tag, msg, res, disconnect) \
+    do { \
+	errno = 0; \
+	DEBUG_XFER (msg, __##msg##_n, "===> "); \
+	int _res; \
+	{ \
+	    if ((_res = nfc_initiator_transceive_bytes (tag->device, msg, __##msg##_n, res, __##res##_size, 0)) < 0)  \
+	    { \
+	    	if (disconnect) \
+		{ \
+		    tag->active = false; \
+	    	} \
+	        return errno = EIO, -1; \
+	    } \
+	} \
+	__##res##_n = _res; \
+	DEBUG_XFER (res, __##res##_n, "<=== "); \
+    } while (0)
+
+#else
+#define CLASSIC_TRANSCEIVE_EX(tag, msg, res, disconnect) \
+    do { \
+	errno = 0; \
+	DEBUG_XFER (msg, __##msg##_n, "===> "); \
+	int _res; \
+	{ \
+	    SCARD_IO_REQUEST __pcsc_rcv_pci; \
+	    DWORD __pcsc_recv_len = __##res##_size; \
+	    if (SCARD_S_SUCCESS != SCardTransmit(tag->hCard, SCARD_PCI_T0, msg, __##msg##_n, &__pcsc_rcv_pci, (LPBYTE)&_res, &__pcsc_recv_len)) \
+	    { \
+	    	if (disconnect) \
+		{ \
+		    tag->active = false; \
+	    	} \
+		return errno = EIO, -1; \
+	    } \
+	    _res = __pcsc_recv_len; \
+	} \
+	__##res##_n = _res; \
+	DEBUG_XFER (res, __##res##_n, "<=== "); \
+    } while (0)
+
+#endif
 
 
 /* Public Key A value of NFC Forum sectors */
@@ -202,7 +271,7 @@ int		 get_block_access_bits (MifareTag tag, const MifareClassicBlockNumber block
 MifareTag
 mifare_classic_tag_new (void)
 {
-    return malloc (sizeof (struct mifare_classic_tag));
+    return (MifareTag)malloc (sizeof (struct mifare_classic_tag));
 }
 
 /*
@@ -232,17 +301,41 @@ mifare_classic_connect (MifareTag tag)
     ASSERT_INACTIVE (tag);
     ASSERT_MIFARE_CLASSIC (tag);
 
-    nfc_target pnti;
-    nfc_modulation modulation = {
-	.nmt = NMT_ISO14443A,
-	.nbr = NBR_106
-    };
-    if (nfc_initiator_select_passive_target (tag->device, modulation, tag->info.abtUid, tag->info.szUidLen, &pnti) >= 0) {
-	tag->active = 1;
-    } else {
-	errno = EIO;
-	return -1;
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+    if(NULL != tag->device) // nfc way
+#endif
+#ifdef HAVE_LIBNFC
+    {
+	nfc_target pnti;
+	nfc_modulation modulation = {
+	    .nmt = NMT_ISO14443A,
+	    .nbr = NBR_106
+	};
+	if (nfc_initiator_select_passive_target (tag->device, modulation, tag->info.abtUid, tag->info.szUidLen, &pnti) >= 0) {
+	    tag->active = 1;
+	} else {
+	    errno = EIO;
+	    return -1;
+	}
     }
+#endif
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+    else // pcsc way
+#endif
+#ifdef HAVE_PCSC
+    {
+	DWORD	dwActiveProtocol;
+	tag->lastPCSCerror = SCardConnect(tag->hContext, tag->szReader, SCARD_SHARE_SHARED, 
+						SCARD_PROTOCOL_T0, &(tag->hCard), &dwActiveProtocol);
+	if(SCARD_S_SUCCESS != tag->lastPCSCerror)
+	{
+	    errno = EIO;
+	    return -1;
+	}
+	tag->active = 1;
+
+    }
+#endif
     return 0;
 }
 
@@ -255,12 +348,36 @@ mifare_classic_disconnect (MifareTag tag)
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_CLASSIC (tag);
 
-    if (nfc_initiator_deselect_target (tag->device) >= 0) {
-	tag->active = 0;
-    } else {
-	errno = EIO;
-	return -1;
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+    if(NULL != tag->device) // nfclib way
+#endif
+#ifdef HAVE_LIBNFC
+    {
+	if (nfc_initiator_deselect_target (tag->device) >= 0) {
+	    tag->active = 0;
+	} else {
+	    errno = EIO;
+	    return -1;
+	}
     }
+#endif
+#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+    else // pcsc way
+#endif
+#ifdef HAVE_PCSC
+    {
+	tag->lastPCSCerror = SCardDisconnect(tag->hCard, SCARD_LEAVE_CARD);
+	if(SCARD_S_SUCCESS == tag->lastPCSCerror) 
+	{
+	    tag->active = 0;
+	}
+	else {
+	    errno = EIO;
+	    return -1;
+	}
+    }
+#endif
+
     return 0;
 }
 
@@ -278,16 +395,18 @@ mifare_classic_disconnect (MifareTag tag)
 int
 mifare_classic_authenticate (MifareTag tag, const MifareClassicBlockNumber block, const MifareClassicKey key, const MifareClassicKeyType key_type)
 {
+    int result = 0;
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_CLASSIC (tag);
 
     BUFFER_INIT (cmd, 12);
     BUFFER_INIT (res, 1);
 
-    if (key_type == MFC_KEY_A)
+    if (key_type == MFC_KEY_A) {
 	BUFFER_APPEND (cmd, MC_AUTH_A);
-    else
+    } else {
 	BUFFER_APPEND (cmd, MC_AUTH_B);
+    }
 
     BUFFER_APPEND(cmd, block);
     BUFFER_APPEND_BYTES (cmd, key, 6);
@@ -300,7 +419,10 @@ mifare_classic_authenticate (MifareTag tag, const MifareClassicBlockNumber block
     MIFARE_CLASSIC(tag)->cached_access_bits.sector_access_bits = 0x00;
     MIFARE_CLASSIC(tag)->last_authentication_key_type = key_type;
 
-    return (BUFFER_SIZE (res) == 0) ? 0 : res[0];
+    result = (BUFFER_SIZE (res) == 0) ? 0 : res[0];
+    BUFFER_FREE(cmd);
+    BUFFER_FREE(res);
+    return result;
 }
 
 /*
@@ -320,6 +442,7 @@ mifare_classic_read (MifareTag tag, const MifareClassicBlockNumber block, Mifare
 
     CLASSIC_TRANSCEIVE (tag, cmd, res);
 
+    BUFFER_FREE(cmd);
     return 0;
 }
 
@@ -378,6 +501,7 @@ mifare_classic_read_value (MifareTag tag, const MifareClassicBlockNumber block, 
 int
 mifare_classic_write (MifareTag tag, const MifareClassicBlockNumber block, const MifareClassicBlock data)
 {
+    int result = 0;
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_CLASSIC (tag);
 
@@ -390,7 +514,10 @@ mifare_classic_write (MifareTag tag, const MifareClassicBlockNumber block, const
 
     CLASSIC_TRANSCEIVE (tag, cmd, res);
 
-    return (BUFFER_SIZE (res) == 0) ? 0 : res[0];
+    result = (BUFFER_SIZE (res) == 0) ? 0 : res[0];
+    BUFFER_FREE(cmd);
+    BUFFER_FREE(res);
+    return result;
 }
 
 /*
@@ -400,6 +527,7 @@ mifare_classic_write (MifareTag tag, const MifareClassicBlockNumber block, const
 int
 mifare_classic_increment (MifareTag tag, const MifareClassicBlockNumber block, const uint32_t amount)
 {
+    int result = 0;
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_CLASSIC (tag);
 
@@ -412,7 +540,10 @@ mifare_classic_increment (MifareTag tag, const MifareClassicBlockNumber block, c
 
     CLASSIC_TRANSCEIVE (tag, cmd, res);
 
-    return (BUFFER_SIZE (res) == 0) ? 0 : res[0];
+    result = (BUFFER_SIZE (res) == 0) ? 0 : res[0];
+    BUFFER_FREE(cmd);
+    BUFFER_FREE(res);
+    return result;
 }
 
 /*
@@ -422,6 +553,7 @@ mifare_classic_increment (MifareTag tag, const MifareClassicBlockNumber block, c
 int
 mifare_classic_decrement (MifareTag tag, const MifareClassicBlockNumber block, const uint32_t amount)
 {
+    int result = 0;
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_CLASSIC (tag);
 
@@ -434,7 +566,10 @@ mifare_classic_decrement (MifareTag tag, const MifareClassicBlockNumber block, c
 
     CLASSIC_TRANSCEIVE (tag, cmd, res);
 
-    return (BUFFER_SIZE (res) == 0) ? 0 : res[0];
+    result = (BUFFER_SIZE (res) == 0) ? 0 : res[0];
+    BUFFER_FREE(cmd);
+    BUFFER_FREE(res);
+    return result;
 }
 
 /*
@@ -443,6 +578,7 @@ mifare_classic_decrement (MifareTag tag, const MifareClassicBlockNumber block, c
 int
 mifare_classic_restore (MifareTag tag, const MifareClassicBlockNumber block)
 {
+    int result = 0;
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_CLASSIC (tag);
 
@@ -463,7 +599,10 @@ mifare_classic_restore (MifareTag tag, const MifareClassicBlockNumber block)
 
     CLASSIC_TRANSCEIVE (tag, cmd, res);
 
-    return (BUFFER_SIZE (res) == 0) ? 0 : res[0];
+    result = (BUFFER_SIZE (res) == 0) ? 0 : res[0];
+    BUFFER_FREE(cmd);
+    BUFFER_FREE(res);
+    return result;
 }
 
 /*
@@ -472,6 +611,7 @@ mifare_classic_restore (MifareTag tag, const MifareClassicBlockNumber block)
 int
 mifare_classic_transfer (MifareTag tag, const MifareClassicBlockNumber block)
 {
+    int result = 0;
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_CLASSIC (tag);
 
@@ -490,9 +630,12 @@ mifare_classic_transfer (MifareTag tag, const MifareClassicBlockNumber block)
      * SCL 3711).
      */
     if (!BUFFER_SIZE (res) || ((BUFFER_SIZE (res) == 1) && (res[0] = MC_OK)))
-	return 0;
+	result = 0;
     else
-	return res[0];
+	result = res[0];
+    BUFFER_FREE(cmd);
+    BUFFER_FREE(res);
+    return result;
 }
 
 

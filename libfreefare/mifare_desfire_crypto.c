@@ -58,13 +58,18 @@
 
 #include <err.h>
 #include <string.h>
-#include <strings.h>
+//#include <strings.h>
 
 #ifdef WITH_DEBUG
 #  include <libutil.h>
 #endif
 
+#ifdef HAVE_LIBNFC
 #include <freefare.h>
+#endif
+#ifdef HAVE_PCSC
+#include "freefare_pcsc.h"
+#endif
 #include "freefare_internal.h"
 
 #define MAC_LENGTH 4
@@ -104,18 +109,22 @@ lsl (uint8_t *data, size_t len)
 void
 cmac_generate_subkeys (MifareDESFireKey key)
 {
-    int kbs = key_block_size (key);
+    const int kbs = key_block_size (key);
     const uint8_t R = (kbs == 8) ? 0x1B : 0x87;
 
+#ifdef _WIN32
+    uint8_t *l = (uint8_t *)malloc(sizeof(uint8_t)*kbs);
+    uint8_t *ivect = (uint8_t *)malloc(sizeof(uint8_t)*kbs);
+#else
     uint8_t l[kbs];
-    memset (l, 0, kbs);
-
     uint8_t ivect[kbs];
+#endif
+    memset (l, 0, kbs);
     memset (ivect, 0, kbs);
 
     mifare_cypher_blocks_chained (NULL, key, ivect, l, kbs, MCD_RECEIVE, MCO_ENCYPHER);
 
-    bool xor = false;
+    int xor = 0;
 
     // Used to compute CMAC on complete blocks
     memcpy (key->cmac_sk1, l, kbs);
@@ -130,13 +139,17 @@ cmac_generate_subkeys (MifareDESFireKey key)
     lsl (key->cmac_sk2, kbs);
     if (xor)
 	key->cmac_sk2[kbs-1] ^= R;
+#ifdef _WIN32
+    free(l);
+    free(ivect);
+#endif
 }
 
 void
 cmac (const MifareDESFireKey key, uint8_t *ivect, const uint8_t *data, size_t len, uint8_t *cmac)
 {
-    int kbs = key_block_size (key);
-    uint8_t *buffer = malloc (padded_data_length (len, kbs));
+    const int kbs = key_block_size (key);
+    uint8_t *buffer = (uint8_t *)malloc (padded_data_length (len, kbs));
 
     if (!buffer)
 	abort();
@@ -285,9 +298,9 @@ enciphered_data_length (const MifareTag tag, const size_t nbytes, int communicat
 void *
 assert_crypto_buffer_size (MifareTag tag, size_t nbytes)
 {
-    void *res = MIFARE_DESFIRE (tag)->crypto_buffer;
+    uint8_t *res = MIFARE_DESFIRE (tag)->crypto_buffer;
     if (MIFARE_DESFIRE (tag)->crypto_buffer_size < nbytes) {
-	if ((res = realloc (MIFARE_DESFIRE (tag)->crypto_buffer, nbytes))) {
+	if ((res = (uint8_t *)realloc (MIFARE_DESFIRE (tag)->crypto_buffer, nbytes))) {
 	    MIFARE_DESFIRE (tag)->crypto_buffer = res;
 	    MIFARE_DESFIRE (tag)->crypto_buffer_size = nbytes;
 	}
@@ -298,7 +311,7 @@ assert_crypto_buffer_size (MifareTag tag, size_t nbytes)
 void *
 mifare_cryto_preprocess_data (MifareTag tag, void *data, size_t *nbytes, off_t offset, int communication_settings)
 {
-    uint8_t *res = data;
+    uint8_t *res = (uint8_t *)data;
     uint8_t mac[4];
     size_t edl, mdl;
     bool append_mac = true;
@@ -333,7 +346,7 @@ mifare_cryto_preprocess_data (MifareTag tag, void *data, size_t *nbytes, off_t o
 
 	    /* pass through */
 	    edl = padded_data_length (*nbytes - offset, key_block_size (MIFARE_DESFIRE (tag)->session_key)) + offset;
-	    if (!(res = assert_crypto_buffer_size (tag, edl)))
+	    if (!(res = (uint8_t *)assert_crypto_buffer_size (tag, edl)))
 		abort();
 
 	    // Fill in the crypto buffer with data ...
@@ -352,7 +365,7 @@ mifare_cryto_preprocess_data (MifareTag tag, void *data, size_t *nbytes, off_t o
 		break;
 	    // Append MAC
 	    mdl = maced_data_length (MIFARE_DESFIRE (tag)->session_key, *nbytes - offset) + offset;
-	    if (!(res = assert_crypto_buffer_size (tag, mdl)))
+	    if (!(res = (uint8_t *)assert_crypto_buffer_size (tag, mdl)))
 		abort();
 
 	    memcpy (res + *nbytes, mac, 4);
@@ -366,7 +379,7 @@ mifare_cryto_preprocess_data (MifareTag tag, void *data, size_t *nbytes, off_t o
 
 	    if (append_mac) {
 		mdl = maced_data_length (key, *nbytes);
-		if (!(res = assert_crypto_buffer_size (tag, mdl)))
+		if (!(res = (uint8_t *)assert_crypto_buffer_size (tag, mdl)))
 		    abort();
 
 		memcpy (res, data, *nbytes);
@@ -396,7 +409,7 @@ mifare_cryto_preprocess_data (MifareTag tag, void *data, size_t *nbytes, off_t o
 	    if (!(communication_settings & ENC_COMMAND))
 		break;
 	    edl = enciphered_data_length (tag, *nbytes - offset, communication_settings) + offset;
-	    if (!(res = assert_crypto_buffer_size (tag, edl)))
+	    if (!(res = (uint8_t *)assert_crypto_buffer_size (tag, edl)))
 		abort();
 
 	    // Fill in the crypto buffer with data ...
@@ -437,10 +450,15 @@ mifare_cryto_preprocess_data (MifareTag tag, void *data, size_t *nbytes, off_t o
 void *
 mifare_cryto_postprocess_data (MifareTag tag, void *data, ssize_t *nbytes, int communication_settings)
 {
-    void *res = data;
+    uint8_t *res = (uint8_t *)data;
     size_t edl;
-    void *edata = NULL;
+    uint8_t *edata = NULL;
     uint8_t first_cmac_byte;
+	  bool verified = false;
+	  int crc_pos;
+	  int end_crc_pos;
+	  uint8_t x;
+
 
     MifareDESFireKey key = MIFARE_DESFIRE (tag)->session_key;
 
@@ -474,7 +492,7 @@ mifare_cryto_postprocess_data (MifareTag tag, void *data, ssize_t *nbytes, int c
 		}
 
 		edl = enciphered_data_length (tag, *nbytes - 1, communication_settings);
-		edata = malloc (edl);
+		edata = (uint8_t *)malloc (edl);
 
 		memcpy (edata, data, *nbytes - 1);
 		memset ((uint8_t *)edata + *nbytes - 1, 0, edl - *nbytes + 1);
@@ -536,11 +554,6 @@ mifare_cryto_postprocess_data (MifareTag tag, void *data, ssize_t *nbytes, int c
 	break;
     case MDCM_ENCIPHERED:
 	(*nbytes)--;
-	bool verified = false;
-	int crc_pos;
-	int end_crc_pos;
-	uint8_t x;
-
 	/*
 	 * AS_LEGACY:
 	 * ,-----------------+-------------------------------+--------+
@@ -580,7 +593,7 @@ mifare_cryto_postprocess_data (MifareTag tag, void *data, ssize_t *nbytes, int c
 	    break;
 	case AS_NEW:
 	    /* Move status between payload and CRC */
-	    res = assert_crypto_buffer_size (tag, (*nbytes) + 1);
+	    res = (uint8_t *)assert_crypto_buffer_size (tag, (*nbytes) + 1);
 	    memcpy (res, data, *nbytes);
 
 	    crc_pos = (*nbytes) - 16 - 3;

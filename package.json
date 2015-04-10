@@ -1,0 +1,18 @@
+{
+  "name": "libfreefare-pcsc",
+  "version": "0.1.0",
+  "description": "This package contains a PC/SC version of libfreefare",
+  "main": "echo ./configure && make && make install",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "desfire",
+    "mifare",
+    "freefare",
+    "pcsc",
+    "nfc"
+  ],
+  "author": "See AUTHORS",
+  "license": "LGPL"
+}
