@@ -28,6 +28,7 @@
 
 /* libnfc is present */
 /* #undef HAVE_LIBNFC */
+#define HAVE_LIBNFC 1
 
 /* Define to 1 if your system has a GNU libc compatible `malloc' function, and
    to 0 otherwise. */

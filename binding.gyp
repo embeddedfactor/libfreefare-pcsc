@@ -16,7 +16,7 @@
             "/usr/include/PCSC/",
             "/usr/local/include/PCSC/"
           ],
-          "libraries": ["-lpcsclite"],
+          "libraries": ["-lpcsclite", "-lnfc"],
           "cflags": ["-std=c99"],
           "direct_dependent_settings": {
             "include_dirs": [
@@ -25,7 +25,7 @@
               "/usr/include/PCSC",
               "/usr/local/include/PCSC"
             ],
-            "libraries": ["-lpcsclite"]
+            "libraries": ["-lpcsclite", "-lnfc"]
           }
         }],
         ["OS=='mac'", {

@@ -223,8 +223,8 @@ struct mifare_tag {
     SCARDHANDLE		hCard;
     SCARD_IO_REQUEST	pioSendPci;
     LONG		lastPCSCerror;
-#endif
     char*		szReader;
+#endif
     // End of PCSC things
     const struct supported_tag *tag_info;
     int active;

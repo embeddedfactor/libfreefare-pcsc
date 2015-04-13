@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "config.h"
 
@@ -105,7 +106,7 @@ freefare_tag_new (nfc_device *device, nfc_iso14443a_info nai)
     }
 
     if (!tag)
-	return NULL;
+	    return NULL;
 
     /*
      * Initialize common fields
@@ -115,6 +116,9 @@ freefare_tag_new (nfc_device *device, nfc_iso14443a_info nai)
     tag->info = nai;
     tag->active = 0;
     tag->tag_info = tag_info;
+#ifdef HAVE_PCSC
+    tag->szReader = NULL;
+#endif
 
     return tag;
 }
@@ -278,7 +282,6 @@ freefare_get_tags (nfc_device *device)
 {
     MifareTag *tags = NULL;
     int tag_count = 0;
-
     nfc_initiator_init(device);
 
     // Drop the field for a while
@@ -402,7 +405,10 @@ freefare_free_tag (MifareTag tag)
 		mifare_ultralight_tag_free (tag);
 		break;
         }
-	FREE_SZREADER(tag->szReader);
+#ifdef HAVE_PCSC
+    if(tag->szReader)
+	    FREE_SZREADER(tag->szReader);
+#endif
     }
 }
 
@@ -476,8 +482,12 @@ freefare_free_tags (MifareTag *tags)
     if (tags) {
 	for (i=0; tags[i]; i++) {
 	    freefare_free_tag(tags[i]);
+      tags[i] = NULL;
 	}
+  // last allocated mem for tag, with NULL in it
+  free(tags[i]);
 	free (tags);
+  tags = NULL;
     }
 }
 
