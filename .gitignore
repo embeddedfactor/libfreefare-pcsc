@@ -13,7 +13,7 @@ INSTALL
 aclocal.m4
 ar-lib
 compile
-config.*
+/config.*
 configure
 depcomp
 install-sh
