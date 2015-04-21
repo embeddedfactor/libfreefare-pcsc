@@ -64,10 +64,10 @@
 
 #include <openssl/rand.h>
 
-#ifdef HAVE_LIBNFC
+#ifdef USE_LIBNFC
 #include <freefare.h>
 #endif
-#ifdef HAVE_PCSC
+#ifdef USE_PCSC
 #include "freefare_pcsc.h"
 #endif
 #include "freefare_internal.h"
@@ -168,7 +168,7 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
    CAPDUs will be 5 bytes longer (CLA+P1+P2+Lc+Le)
    RAPDUs will be 1 byte longer  (SW1 SW2 instead of 1 status byte)
  */
-#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+#if defined(USE_LIBNFC) && defined(USE_PCSC)
 #define DESFIRE_TRANSCEIVE2(tag, msg, msg_len, res) \
     do { \
 	static uint8_t __msg[MAX_CAPDU_SIZE + 5] = { 0x90, 0x00, 0x00, 0x00, 0x00, /* ..., */ 0x00 }; \
@@ -214,7 +214,7 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
 	memcpy (res, __res, __##res##_n - 1); \
     } while (0)
 
-#elif HAVE_LIBNFC
+#elif USE_LIBNFC
 #define DESFIRE_TRANSCEIVE2(tag, msg, msg_len, res) \
     do { \
 	static uint8_t __msg[MAX_CAPDU_SIZE + 5] = { 0x90, 0x00, 0x00, 0x00, 0x00, /* ..., */ 0x00 }; \
@@ -381,10 +381,10 @@ mifare_desfire_connect (MifareTag tag)
     ASSERT_INACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
 
-#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+#if defined(USE_LIBNFC) && defined(USE_PCSC)
     if(NULL != tag->device) // nfc way
 #endif
-#ifdef HAVE_LIBNFC
+#ifdef USE_LIBNFC
 	  {
     nfc_target pnti;
     nfc_modulation modulation = {
@@ -410,10 +410,10 @@ mifare_desfire_connect (MifareTag tag)
   }
     }
 #endif
-#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+#if defined(USE_LIBNFC) && defined(USE_PCSC)
     else	// pcsc way
 #endif
-#ifdef HAVE_PCSC
+#ifdef USE_PCSC
     {
 	DWORD	dwActiveProtocol;
 	
@@ -458,20 +458,20 @@ mifare_desfire_disconnect (MifareTag tag)
     free (MIFARE_DESFIRE (tag)->session_key);
     MIFARE_DESFIRE(tag)->session_key = NULL;
     
-#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+#if defined(USE_LIBNFC) && defined(USE_PCSC)
     if(NULL != tag->device) // nfclib way
 #endif
-#ifdef HAVE_LIBNFC
+#ifdef USE_LIBNFC
     {
  	if (nfc_initiator_deselect_target (tag->device) >= 0) {
 	    tag->active = 0;
 	}
     }
 #endif
-#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+#if defined(USE_LIBNFC) && defined(USE_PCSC)
     else // pcsc way
 #endif
-#ifdef HAVE_PCSC
+#ifdef USE_PCSC
     {
 	tag->lastPCSCerror = SCardDisconnect(tag->hCard, SCARD_LEAVE_CARD);
 	if(SCARD_S_SUCCESS == tag->lastPCSCerror) 

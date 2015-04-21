@@ -42,10 +42,10 @@
 #  include <libutil.h>
 #endif
 
-#ifdef HAVE_LIBNFC
+#ifdef USE_LIBNFC
 #include <freefare.h>
 #endif
-#ifdef HAVE_PCSC
+#ifdef USE_PCSC
 #include "freefare_pcsc.h"
 #endif
 #include "freefare_internal.h"
@@ -63,7 +63,7 @@
 	} \
     } while (0)
 
-#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+#if defined(USE_LIBNFC) && defined(USE_PCSC)
 #define ULTRALIGHT_TRANSCEIVE(tag, msg, res) \
     do { \
 	int _res ; \
@@ -118,7 +118,7 @@ do { \
 	} \
 } while (0);
 
-#elif HAVE_LIBNFC
+#elif USE_LIBNFC
 #define ULTRALIGHT_TRANSCEIVE(tag, msg, res) \
     do { \
 	int _res ; \
@@ -224,10 +224,10 @@ mifare_ultralight_connect (MifareTag tag)
     ASSERT_INACTIVE (tag);
     ASSERT_MIFARE_ULTRALIGHT (tag);
 
-#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+#if defined(USE_LIBNFC) && defined(USE_PCSC)
     if (tag->device == NULL) 
 #endif
-#ifdef HAVE_PCSC
+#ifdef USE_PCSC
     { /* pcsc branch */
 
 	DWORD dwActiveProtocol;
@@ -243,7 +243,7 @@ mifare_ultralight_connect (MifareTag tag)
 
     } 
 #endif
-#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+#if defined(USE_LIBNFC) && defined(USE_PCSC)
     else 
 #endif
 #ifdef HAAVE_LIBNFC
@@ -276,10 +276,10 @@ mifare_ultralight_disconnect (MifareTag tag)
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_ULTRALIGHT (tag);
 
-#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+#if defined(USE_LIBNFC) && defined(USE_PCSC)
     if (tag->device == NULL) 
 #endif
-#ifdef HAVE_PCSC
+#ifdef USE_PCSC
     {
 	/* pcsc branch */
 
@@ -296,10 +296,10 @@ mifare_ultralight_disconnect (MifareTag tag)
 
     } 
 #endif
-#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+#if defined(USE_LIBNFC) && defined(USE_PCSC)
     else /* nfc branch */
 #endif
-#ifdef HAVE_LIBNFC
+#ifdef USE_LIBNFC
     { 
     	if (nfc_initiator_deselect_target (tag->device) >= 0) {
 	    tag->active = 0;
@@ -459,7 +459,7 @@ mifare_ultralightc_authenticate (MifareTag tag, const MifareDESFireKey key)
     // XXX Should we store the state "authenticated" in the tag struct??
     return 0;
 }
-#ifdef HAVE_LIBNFC
+#ifdef USE_LIBNFC
 /*
  * Callback for freefare_tag_new to test presence of a MIFARE UltralightC on the reader.
  */

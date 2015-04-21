@@ -52,10 +52,10 @@
 #include <string.h>
 #include <stdint.h>
 
-#ifdef HAVE_LIBNFC
+#ifdef USE_LIBNFC
 #include <freefare.h>
 #endif
-#ifdef HAVE_PCSC
+#ifdef USE_PCSC
 #include "freefare_pcsc.h"
 #endif
 #include "freefare_internal.h"

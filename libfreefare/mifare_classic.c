@@ -68,10 +68,10 @@
 #ifdef WITH_DEBUG
 #  include <libutil.h>
 #endif
-#ifdef HAVE_LIBNFC
+#ifdef USE_LIBNFC
 #include <freefare.h>
 #endif
-#ifdef HAVE_PCSC
+#ifdef USE_PCSC
 #include "freefare_pcsc.h"
 #endif
 #include "freefare_internal.h"
@@ -89,7 +89,7 @@
 
 #define CLASSIC_TRANSCEIVE(tag, msg, res) CLASSIC_TRANSCEIVE_EX(tag, msg, res, 0)
 
-#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+#if defined(USE_LIBNFC) && defined(USE_PCSC)
 #define CLASSIC_TRANSCEIVE_EX(tag, msg, res, disconnect) \
     do { \
 	errno = 0; \
@@ -126,7 +126,7 @@
 	DEBUG_XFER (res, __##res##_n, "<=== "); \
     } while (0)
 
-#elif HAVE_LIBNFC
+#elif USE_LIBNFC
 #define CLASSIC_TRANSCEIVE_EX(tag, msg, res, disconnect) \
     do { \
 	errno = 0; \
@@ -301,10 +301,10 @@ mifare_classic_connect (MifareTag tag)
     ASSERT_INACTIVE (tag);
     ASSERT_MIFARE_CLASSIC (tag);
 
-#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+#if defined(USE_LIBNFC) && defined(USE_PCSC)
     if(NULL != tag->device) // nfc way
 #endif
-#ifdef HAVE_LIBNFC
+#ifdef USE_LIBNFC
     {
 	nfc_target pnti;
 	nfc_modulation modulation = {
@@ -319,10 +319,10 @@ mifare_classic_connect (MifareTag tag)
 	}
     }
 #endif
-#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+#if defined(USE_LIBNFC) && defined(USE_PCSC)
     else // pcsc way
 #endif
-#ifdef HAVE_PCSC
+#ifdef USE_PCSC
     {
 	DWORD	dwActiveProtocol;
 	tag->lastPCSCerror = SCardConnect(tag->hContext, tag->szReader, SCARD_SHARE_SHARED, 
@@ -348,10 +348,10 @@ mifare_classic_disconnect (MifareTag tag)
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_CLASSIC (tag);
 
-#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+#if defined(USE_LIBNFC) && defined(USE_PCSC)
     if(NULL != tag->device) // nfclib way
 #endif
-#ifdef HAVE_LIBNFC
+#ifdef USE_LIBNFC
     {
 	if (nfc_initiator_deselect_target (tag->device) >= 0) {
 	    tag->active = 0;
@@ -361,10 +361,10 @@ mifare_classic_disconnect (MifareTag tag)
 	}
     }
 #endif
-#if defined(HAVE_LIBNFC) && defined(HAVE_PCSC)
+#if defined(USE_LIBNFC) && defined(USE_PCSC)
     else // pcsc way
 #endif
-#ifdef HAVE_PCSC
+#ifdef USE_PCSC
     {
 	tag->lastPCSCerror = SCardDisconnect(tag->hCard, SCARD_LEAVE_CARD);
 	if(SCARD_S_SUCCESS == tag->lastPCSCerror) 

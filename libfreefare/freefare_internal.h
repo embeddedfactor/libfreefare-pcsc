@@ -191,7 +191,7 @@ struct supported_tag {
     uint8_t ATS_min_length;
     uint8_t ATS_compare_length;
     uint8_t ATS[5];
-#ifdef HAVE_LIBNFC
+#ifdef USE_LIBNFC
     bool (*check_tag_on_reader) (nfc_device *, nfc_iso14443a_info);
 #else
     void *x;
@@ -207,13 +207,13 @@ struct supported_tag {
  * mifare_*_connect() function.
  */
 struct mifare_tag {
-#ifdef HAVE_LIBNFC
+#ifdef USE_LIBNFC
     nfc_device *device;
     nfc_iso14443a_info info;
 #endif
     // PCSC things
-#ifdef HAVE_PCSC
-#ifndef HAVE_LIBNFC
+#ifdef USE_PCSC
+#ifndef USE_LIBNFC
     struct {
   size_t  szUidLen;
   uint8_t  abtUid[10];
@@ -455,7 +455,7 @@ struct mifare_ultralight_tag {
     } while (0)
 #endif
 
-#if (!defined(HAVE_LIBNFC)) && (defined(HAVE_PCSC))
+#if (!defined(USE_LIBNFC)) && (defined(USE_PCSC))
 inline void
 iso14443a_crc(uint8_t *pbtData, size_t szLen, uint8_t *pbtCrc)
 {

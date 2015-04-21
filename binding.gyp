@@ -2,43 +2,64 @@
   "variables": {
     "freefare_url": "https://github.com/embeddedfactor/libfreefare-pcsc.git",
     "freefare_src": "libfreefare",
+    "target_arch": "", # may break mac installation, see evaluation of target_arch below
   },
   "targets": [
     {
       "target_name": "freefare_pcsc",
       "product_prefix": "lib",
       "type": "static_library",
+      "include_dirs": [
+        "<(freefare_src)",
+        "contrib/<(OS)/<(target_arch)",
+      ],
+      "defines": ["USE_PCSC"],
+      "direct_dependent_settings": {
+        "include_dirs": [
+          "<(freefare_src)",
+          "contrib/<(OS)/<(target_arch)",
+        ],
+      },
       "conditions": [
         ["OS=='linux'", {
+          "variables": {
+            "target_arch": '<!(uname -m | grep -q ^arm && echo arm || /bin/true)',
+          },
+          "conditions": [
+            ['target_arch=="arm"', {
+              "include_dirs!": [ '/usr/include/PCSC', '/usr/local/include/PCSC'],
+              "libraries!": ['-lpcsclite'],
+              "libraries": ['-lnfc'],
+              "defines!": ["USE_PCSC"],
+              "defines": ["USE_LIBNFC"],
+              "direct_dependent_settings": {
+                "include_dirs!": [ '/usr/include/PCSC', '/usr/local/include/PCSC'],
+                "libraries!": ['-lpcsclite'],
+                "libraries": ["-lnfc"],
+              },
+            }],
+          ],
           "include_dirs": [
-            "contrib/linux",
-            "<(freefare_src)",
             "/usr/include/PCSC/",
             "/usr/local/include/PCSC/"
           ],
-          "libraries": ["-lpcsclite", "-lnfc"],
+          "libraries": ["-lpcsclite"],
           "cflags": ["-std=c99"],
           "direct_dependent_settings": {
             "include_dirs": [
-              "contrib/linux",
-              "<(freefare_src)",
               "/usr/include/PCSC",
               "/usr/local/include/PCSC"
             ],
-            "libraries": ["-lpcsclite", "-lnfc"]
+            "libraries": ["-lpcsclite",]
           }
         }],
         ["OS=='mac'", {
           "include_dirs": [
-            "contrib/macos",
-            "<(freefare_src)",
             "/System/Library/Frameworks/PCSC.framework/Headers"
           ],
           "libraries": ["$(SDKROOT)/System/Library/Frameworks/PCSC.framework"],
           "direct_dependent_settings": {
             "include_dirs": [
-              "contrib/macos",
-              "<(freefare_src)",
               "/System/Library/Frameworks/PCSC.framework/Headers"
             ],
             "libraries": ["$(SDKROOT)/System/Library/Frameworks/PCSC.framework"]
@@ -60,14 +81,10 @@
             }],
           ],
           "include_dirs": [
-            "contrib/win32",
-            "<(freefare_src)",
             "<(openssl_root)/include"
           ],
           "direct_dependent_settings": {
             "include_dirs": [
-              "contrib/win32",
-              "<(freefare_src)",
               "<(openssl_root)\include"
             ],
             "libraries": [
