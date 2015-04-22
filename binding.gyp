@@ -2,7 +2,7 @@
   "variables": {
     "freefare_url": "https://github.com/embeddedfactor/libfreefare-pcsc.git",
     "freefare_src": "libfreefare",
-    "target_arch": "", # may break mac installation, see evaluation of target_arch below
+    "ARCH%": '',
   },
   "targets": [
     {
@@ -11,22 +11,22 @@
       "type": "static_library",
       "include_dirs": [
         "<(freefare_src)",
-        "contrib/<(OS)/<(target_arch)",
+        "contrib/<(OS)/<(ARCH)",
       ],
       "defines": ["USE_PCSC"],
       "direct_dependent_settings": {
         "include_dirs": [
           "<(freefare_src)",
-          "contrib/<(OS)/<(target_arch)",
+          "contrib/<(OS)/<(ARCH)",
         ],
       },
       "conditions": [
         ["OS=='linux'", {
           "variables": {
-            "target_arch": '<!(uname -m | grep -q ^arm && echo arm || /bin/true)',
+            "ARCH%": '<!(uname -m | grep -q ^arm && echo arm || /bin/true)',
           },
           "conditions": [
-            ['target_arch=="arm"', {
+            ['ARCH=="arm"', {
               "include_dirs!": [ '/usr/include/PCSC', '/usr/local/include/PCSC'],
               "libraries!": ['-lpcsclite'],
               "libraries": ['-lnfc'],
