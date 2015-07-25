@@ -116,7 +116,7 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
 #define ASSERT_AUTHENTICATED(tag) \
     do { \
 	if (MIFARE_DESFIRE (tag)->authenticated_key_no == NOT_YET_AUTHENTICATED) { \
-	    return errno = EINVAL, -1;\
+	    return errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;\
 	} \
     } while (0)
 
@@ -127,18 +127,18 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
 #define ASSERT_CS(cs) \
     do { \
 	if (cs < 0) { \
-	    return errno = EINVAL, -1; \
+	    return errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */; \
 	} else if (cs == 0x02) { \
-	    return errno = EINVAL, -1; \
+	    return errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */; \
 	} else if (cs > 0x03) { \
-	    return errno = EINVAL, -1; \
+	    return errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */; \
 	} \
     } while (0)
 
 #define ASSERT_NOT_NULL(argument) \
     do { \
 	if (!argument) { \
-	    return errno = EINVAL, -1; \
+	    return errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */; \
 	} \
     } while (0)
 
@@ -176,7 +176,7 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
 	static uint8_t __res[MAX_RAPDU_SIZE + 1]; \
 	size_t __len = 5; \
 	errno = 0; \
-	if (!msg) return errno = EINVAL, -1; \
+	if (!msg) return errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */; \
 	__msg[1] = msg[0]; \
 	if (msg_len > 1) { \
 	    __len += msg_len; \
@@ -191,7 +191,7 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
 	int _res; \
 	if (tag->device == NULL) \
   { /* pcsc branch */ \
-		SCARD_IO_REQUEST __pcsc_rcv_pci; \
+		/* SCARD_IO_REQUEST __pcsc_rcv_pci; // TODO: Unused?? */ \
 		DWORD __pcsc_recv_len = __##res##_size + 1; \
 		if (SCARD_S_SUCCESS != SCardTransmit(tag->hCard, &tag->pioSendPci, __msg, __len, NULL /*&__pcsc_rcv_pci*/, __res, &__pcsc_recv_len)) { \
 			return errno = EIO, -1; \
@@ -222,7 +222,7 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
 	static uint8_t __res[MAX_RAPDU_SIZE + 1]; \
 	size_t __len = 5; \
 	errno = 0; \
-	if (!msg) return errno = EINVAL, -1; \
+	if (!msg) return errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */; \
 	__msg[1] = msg[0]; \
 	if (msg_len > 1) { \
 	    __len += msg_len; \
@@ -258,7 +258,7 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
 	static uint8_t __res[MAX_RAPDU_SIZE + 1]; \
 	size_t __len = 5; \
 	errno = 0; \
-	if (!msg) return errno = EINVAL, -1; \
+	if (!msg) return errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */; \
 	__msg[1] = msg[0]; \
 	if (msg_len > 1) { \
 	    __len += msg_len; \
@@ -272,7 +272,7 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
 	DEBUG_XFER (__msg, __len, "===> "); \
 	int _res; \
   { /* pcsc branch */ \
-		SCARD_IO_REQUEST __pcsc_rcv_pci; \
+		/* SCARD_IO_REQUEST __pcsc_rcv_pci; // TODO: Unused?? */\
 		DWORD __pcsc_recv_len = __##res##_size + 1; \
 		if (SCARD_S_SUCCESS != SCardTransmit(tag->hCard, &tag->pioSendPci, __msg, __len, NULL/*&__pcsc_rcv_pci*/, __res, &__pcsc_recv_len)) { \
 			return errno = EIO, -1; \
@@ -637,7 +637,7 @@ mifare_desfire_change_key_settings (MifareTag tag, uint8_t settings)
     p = (char *)mifare_cryto_postprocess_data (tag, res, &n, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY | MAC_COMMAND | MAC_VERIFY);
 
     if (!p) {
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     }
     BUFFER_FREE(cmd);
     BUFFER_FREE(res);
@@ -664,7 +664,7 @@ mifare_desfire_get_key_settings (MifareTag tag, uint8_t *settings, uint8_t *max_
     p = (char *)mifare_cryto_postprocess_data (tag, res, &n, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
     if (!p) {
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     } else {
     if (settings)
 	*settings = p[0];
@@ -774,7 +774,7 @@ mifare_desfire_change_key (MifareTag tag, uint8_t key_no, MifareDESFireKey new_k
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
     if (!p) {
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     } else {
     /*
      * If we changed the current authenticated key, we are not authenticated
@@ -816,7 +816,7 @@ mifare_desfire_get_key_version (MifareTag tag, uint8_t key_no, uint8_t *version)
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY | MAC_VERIFY);
 
     if (!p) {
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     } else {
     *version = p[0];
     }
@@ -859,7 +859,7 @@ create_application (MifareTag tag, MifareDESFireAID aid, uint8_t settings1, uint
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY | MAC_VERIFY);
 
     if (!p)
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
 
     BUFFER_FREE(cmd);
     BUFFER_FREE(res);
@@ -924,7 +924,7 @@ mifare_desfire_delete_application (MifareTag tag, MifareDESFireAID aid)
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
     if (!p) {
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     } else {
     /*
      * If we have deleted the current application, we are not authenticated
@@ -978,7 +978,7 @@ mifare_desfire_get_application_ids (MifareTag tag, MifareDESFireAID *aids[], siz
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, buffer, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY | MAC_VERIFY);
 
     if (!p) {
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     } else {
 
     *count = (sn - 1)/3;
@@ -1087,7 +1087,7 @@ mifare_desfire_select_application (MifareTag tag, MifareDESFireAID aid)
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND);
 
     if (!p) {
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     } else {
     for (int n = 0; n < MAX_FILE_COUNT; n++)
 	cached_file_settings_current[n] = false;
@@ -1125,7 +1125,7 @@ mifare_desfire_format_picc (MifareTag tag)
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
     if (!p) {
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     } else {
     free (MIFARE_DESFIRE (tag)->session_key);
     MIFARE_DESFIRE (tag)->session_key = NULL;
@@ -1174,7 +1174,7 @@ mifare_desfire_get_version (MifareTag tag, struct mifare_desfire_version_info *v
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, buffer, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
     if (!p)
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
 
     BUFFER_FREE(cmd);
     BUFFER_FREE(res);
@@ -1204,7 +1204,7 @@ mifare_desfire_free_mem (MifareTag tag, uint32_t *size)
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
     if (!p) {
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     } else {
     *size = p[0] | (p[1] << 8) | (p[2] << 16);
     }
@@ -1238,7 +1238,7 @@ mifare_desfire_set_configuration (MifareTag tag, bool disable_format, bool enabl
 
 
     if (!p)
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
 
     BUFFER_FREE(cmd);
     BUFFER_FREE(res);
@@ -1282,7 +1282,7 @@ mifare_desfire_set_default_key (MifareTag tag, MifareDESFireKey key)
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
     if (!p)
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
 
     BUFFER_FREE(cmd);
     BUFFER_FREE(res);
@@ -1323,7 +1323,7 @@ mifare_desfire_set_ats (MifareTag tag, uint8_t *ats)
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
     if (!p)
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
 
     BUFFER_FREE(cmd);
     BUFFER_FREE(res);
@@ -1353,7 +1353,7 @@ mifare_desfire_get_card_uid (MifareTag tag, char **uid)
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_ENCIPHERED);
 
     if (!p) {
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     } else if (!(*uid = (char *)malloc (2*7+1))) {
 	result = -1;
     } else {
@@ -1394,7 +1394,7 @@ mifare_desfire_get_file_ids (MifareTag tag, uint8_t *files[], size_t *count)
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
     if (!p) {
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     } else {
     *count = sn - 1;
 
@@ -1446,7 +1446,7 @@ mifare_desfire_get_iso_file_ids (MifareTag tag, uint16_t *files[], size_t *count
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, data, &sn, MDCM_PLAIN | CMAC_COMMAND);
 
     if (!p) {
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     } else {
     *count = sn / 2;
     *files = (uint16_t *)malloc (sizeof (**files) * *count);
@@ -1493,7 +1493,7 @@ mifare_desfire_get_file_settings (MifareTag tag, uint8_t file_no, struct mifare_
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
     if (!p) {
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     } else {
 
     struct mifare_desfire_raw_file_settings raw_settings;
@@ -1561,7 +1561,7 @@ mifare_desfire_change_file_settings (MifareTag tag, uint8_t file_no, uint8_t com
 	p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
 	if (!p)
-	    result = errno = EINVAL, -1;
+	    result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
   BUFFER_FREE(cmd);
   BUFFER_FREE(res);
   return result;
@@ -1582,7 +1582,7 @@ mifare_desfire_change_file_settings (MifareTag tag, uint8_t file_no, uint8_t com
 	p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
 	if (!p)
-	    result = errno = EINVAL, -1;
+	    result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
   BUFFER_FREE(cmd);
   BUFFER_FREE(res);
     }
@@ -1616,7 +1616,7 @@ create_file1 (MifareTag tag, uint8_t command, uint8_t file_no, int has_iso_file_
     p = (char *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
     if (!p) {
-	result = errno = EINVAL, -1; 
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */; 
     } else {
 
     cached_file_settings_current[file_no] = false;
@@ -1678,7 +1678,7 @@ mifare_desfire_create_value_file (MifareTag tag, uint8_t file_no, uint8_t commun
     p = (char *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
     if (!p) {
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     } else {
 
     cached_file_settings_current[file_no] = false;
@@ -1716,7 +1716,7 @@ create_file2 (MifareTag tag, uint8_t command, uint8_t file_no, int has_iso_file_
     p = (char *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
     if (!p) {
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     } else {
 
     cached_file_settings_current[file_no] = false;
@@ -1772,7 +1772,7 @@ mifare_desfire_delete_file (MifareTag tag, uint8_t file_no)
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
     if (!p) {
-      result = errno = EINVAL, -1;
+      result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     }
     BUFFER_FREE(cmd);
     BUFFER_FREE(res);
@@ -1864,7 +1864,7 @@ read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t
     free (read_buffer);
 
     if (!p) {
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     } else {
     result = (sr <= 0) ? sr : sr - 1;
     }
@@ -1934,7 +1934,7 @@ write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
     if (!p) {
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     } else {
     if (0x00 == p[__res_n-1]) {
 	// Remove header length
@@ -1976,7 +1976,7 @@ mifare_desfire_get_value_ex (MifareTag tag, uint8_t file_no, int32_t *value, int
 {
     int result = 0;
     if (!value)
-	return errno = EINVAL, -1;
+	return errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
 
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
@@ -1996,7 +1996,7 @@ mifare_desfire_get_value_ex (MifareTag tag, uint8_t file_no, int32_t *value, int
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, cs | CMAC_COMMAND | CMAC_VERIFY | MAC_VERIFY);
 
     if (!p) {
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     } else {
     *value = le32toh (*(int32_t *)(p));
     }
@@ -2034,7 +2034,7 @@ mifare_desfire_credit_ex (MifareTag tag, uint8_t file_no, int32_t amount, int cs
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
     if (!p) {
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     } else {
     cached_file_settings_current[file_no] = false;
     }
@@ -2071,7 +2071,7 @@ mifare_desfire_debit_ex (MifareTag tag, uint8_t file_no, int32_t amount, int cs)
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
     if (!p) {
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     } else {
     cached_file_settings_current[file_no] = false;
     }
@@ -2108,7 +2108,7 @@ mifare_desfire_limited_credit_ex (MifareTag tag, uint8_t file_no, int32_t amount
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
     if (!p) {
-	      result = errno = EINVAL, -1;
+	      result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     } else {
         cached_file_settings_current[file_no] = false;
     }
@@ -2161,7 +2161,7 @@ mifare_desfire_clear_record_file (MifareTag tag, uint8_t file_no)
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
     if (!p) {
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     } else {
     cached_file_settings_current[file_no] = false;
     }
@@ -2190,7 +2190,7 @@ mifare_desfire_commit_transaction (MifareTag tag)
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
     if (!p) {
-	    result = errno = EINVAL, -1;
+	    result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     }
   BUFFER_FREE(cmd);
   BUFFER_FREE(res);
@@ -2218,7 +2218,7 @@ mifare_desfire_abort_transaction (MifareTag tag)
     p = (uint8_t *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
     if (!p) {
-	result = errno = EINVAL, -1;
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     }
   BUFFER_FREE(cmd);
   BUFFER_FREE(res);

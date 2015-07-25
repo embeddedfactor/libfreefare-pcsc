@@ -143,7 +143,7 @@ freefare_tag_new_pcsc (struct pcsc_context *context, const char *reader)
     DWORD retlen;
     SCARDHANDLE hCard;
     SCARD_IO_REQUEST sendpci;
-    SCARD_IO_REQUEST ioreq;
+    /* SCARD_IO_REQUEST ioreq; // TODO: Unused?? */
 
     err = SCardConnect(context->context, reader, SCARD_SHARE_SHARED, 
 			SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1, &hCard, &dwActiveProtocol);
@@ -186,7 +186,7 @@ freefare_tag_new_pcsc (struct pcsc_context *context, const char *reader)
 	    }
 	} else {
 	    /* bitmask case */
-	    int c = 0;
+	    unsigned int c = 0;
 	    for (c = 0; c < pcsc_supported_atrs[k].len; c++){
 		if((pcsc_supported_atrs[k].tag[c] & pcsc_supported_atrs[k].mask[c]) != (pbAttr[c] & pcsc_supported_atrs[k].mask[c])){
 		    break;

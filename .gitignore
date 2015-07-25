@@ -3,6 +3,7 @@
 *.lo
 *.Plo
 *.pc
+*.sw?
 /build
 */.deps/
 **/.libs/

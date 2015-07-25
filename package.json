@@ -1,7 +1,7 @@
 {
   "name": "libfreefare-pcsc",
-  "version": "0.1.0",
-  "description": "This package contains a PC/SC version of libfreefare",
+  "version": "0.4.0",
+  "description": "This package contains a npm build and linkable version of libfreefare",
   "main": "echo ./configure && make && make install",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -14,5 +14,11 @@
     "nfc"
   ],
   "author": "See AUTHORS",
-  "license": "LGPL"
+  "license": "LGPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/embeddedfactor/libfreefare-pcsc.git"
+  },
+  "os" : [ "darwin", "linux", "win32" ],
+  "cpu" : [ "x64", "x84", "arm" ]
 }

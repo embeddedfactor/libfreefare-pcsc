@@ -394,6 +394,8 @@ struct mifare_ultralight_tag {
     size_t __##buffer_name##_n = 0; \
     uint8_t buffer_name[size];
 #define BUFFER_FREE(buffer_name) \
+    (void)(__##buffer_name##_size); \
+    (void)(__##buffer_name##_n); \
   /* Do nothing we use the stack! */
 #endif
 /*
@@ -403,7 +405,10 @@ struct mifare_ultralight_tag {
 #define BUFFER_ALIAS(buffer_name, origin, origin_size) \
     size_t __##buffer_name##_size = origin_size; \
     size_t __##buffer_name##_n = 0; \
-    uint8_t *buffer_name = (uint8_t *)origin;
+    uint8_t *buffer_name = (uint8_t *)origin; \
+    (void)(__##buffer_name##_size); \
+    (void)(__##buffer_name##_n); \
+    (void)(buffer_name);
 
 #define BUFFER_SIZE(buffer_name) (__##buffer_name##_n)
 
