@@ -54,12 +54,12 @@
     do { \
 	if (IS_MIFARE_ULTRALIGHT_C(tag)) { \
 	    if (mode_write) { \
-		if (page >= MIFARE_ULTRALIGHT_C_PAGE_COUNT) return errno = EINVAL, -1; \
+		if (page >= MIFARE_ULTRALIGHT_C_PAGE_COUNT) return errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */; \
 	    } else { \
-		if (page >= MIFARE_ULTRALIGHT_C_PAGE_COUNT_READ) return errno = EINVAL, -1; \
+		if (page >= MIFARE_ULTRALIGHT_C_PAGE_COUNT_READ) return errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */; \
 	    } \
 	} else { \
-	    if (page >= MIFARE_ULTRALIGHT_PAGE_COUNT) return errno = EINVAL, -1; \
+	    if (page >= MIFARE_ULTRALIGHT_PAGE_COUNT) return errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */; \
 	} \
     } while (0)
 
