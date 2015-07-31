@@ -216,8 +216,29 @@ struct freefare_tag {
 #ifdef USE_PCSC
 #ifndef USE_LIBNFC
     struct {
-        size_t  szUidLen;
-        uint8_t  abtUid[10];
+        struct {
+            // From https://github.com/nfc-tools/libnfc/blob/master/include/nfc/nfc-types.h#L295
+            // Only if libnfc cannot provide these symbols
+            enum {
+                NMT_ISO14443A = 1,
+                NMT_JEWEL,
+                NMT_ISO14443B,
+                NMT_ISO14443BI, // pre-ISO14443B aka ISO/IEC 14443 B' or Type B'
+                NMT_ISO14443B2SR, // ISO14443-2B ST SRx
+                NMT_ISO14443B2CT, // ISO14443-2B ASK CTx
+                NMT_FELICA,
+                NMT_DEP,
+            } nmt;
+        } nm;
+        struct {
+            struct {
+                uint8_t  abtId[8];
+            } nfi;
+            struct {
+                size_t  szUidLen;
+                uint8_t  abtUid[10];
+            } nai;
+        } nti;
     } info;
 #endif
     SCARDCONTEXT 	hContext;

@@ -190,7 +190,7 @@ do { \
 FreefareTag
 mifare_ultralight_tag_new (void)
 {
-    return (MifareTag)malloc (sizeof (struct mifare_ultralight_tag));
+    return (FreefareTag)malloc (sizeof (struct mifare_ultralight_tag));
 }
 
 /*

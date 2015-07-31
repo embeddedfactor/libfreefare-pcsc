@@ -269,7 +269,7 @@ int		 get_block_access_bits (FreefareTag tag, const MifareClassicBlockNumber blo
 FreefareTag
 mifare_classic_tag_new (void)
 {
-    return (MifareTag)malloc (sizeof (struct mifare_classic_tag));
+    return (FreefareTag)malloc (sizeof (struct mifare_classic_tag));
 }
 
 /*
