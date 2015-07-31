@@ -13,9 +13,9 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- * $Id$
  */
+
+#include "config.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -44,42 +44,47 @@
 #define NXP_MANUFACTURER_CODE 0x04
 
 struct supported_tag supported_tags[] = {
-    { CLASSIC_1K,   "Mifare Classic 1k",            0x08, 0, 0, { 0x00 }, NULL },
-    { CLASSIC_1K,   "Mifare Classic 1k (Emulated)", 0x28, 0, 0, { 0x00 }, NULL },
-    { CLASSIC_1K,   "Mifare Classic 1k (Emulated)", 0x68, 0, 0, { 0x00 }, NULL },
-    { CLASSIC_1K,   "Infineon Mifare Classic 1k",   0x88, 0, 0, { 0x00 }, NULL },
-    { CLASSIC_4K,   "Mifare Classic 4k",            0x18, 0, 0, { 0x00 }, NULL },
-    { CLASSIC_4K,   "Mifare Classic 4k (Emulated)", 0x38, 0, 0, { 0x00 }, NULL },
-    { DESFIRE,      "Mifare DESFire",               0x20, 5, 4, { 0x75, 0x77, 0x81, 0x02 /*, 0xXX */ }, NULL},
-	{ DESFIRE,      "Cyanogenmod card emulation",   0x60, 4, 3, { 0x78, 0x33, 0x88 /*, 0xXX */ }, NULL},
-    { DESFIRE,      "Android HCE",                  0x60, 4, 3, { 0x78, 0x80, 0x70 /*, 0xXX */ }, NULL},
-#if (!defined(is_mifare_ultralightc_on_reader))
-    { ULTRALIGHT_C, "Mifare UltraLightC",           0x00, 0, 0, { 0x00 }, NULL },
-#else
-    { ULTRALIGHT_C, "Mifare UltraLightC",           0x00, 0, 0, { 0x00 }, is_mifare_ultralightc_on_reader },
-#endif
-    { ULTRALIGHT,   "Mifare UltraLight",            0x00, 0, 0, { 0x00 }, NULL },
+    { FELICA,              "FeliCA",                       NMT_FELICA,    0x00, 0, 0, { 0x00 }, NULL },
+    { MIFARE_CLASSIC_1K,   "Mifare Classic 1k",            NMT_ISO14443A, 0x08, 0, 0, { 0x00 }, NULL },
+    { MIFARE_CLASSIC_1K,   "Mifare Classic 1k (Emulated)", NMT_ISO14443A, 0x28, 0, 0, { 0x00 }, NULL },
+    { MIFARE_CLASSIC_1K,   "Mifare Classic 1k (Emulated)", NMT_ISO14443A, 0x68, 0, 0, { 0x00 }, NULL },
+    { MIFARE_CLASSIC_1K,   "Infineon Mifare Classic 1k",   NMT_ISO14443A, 0x88, 0, 0, { 0x00 }, NULL },
+    { MIFARE_CLASSIC_4K,   "Mifare Classic 4k",            NMT_ISO14443A, 0x18, 0, 0, { 0x00 }, NULL },
+    { MIFARE_CLASSIC_4K,   "Mifare Classic 4k (Emulated)", NMT_ISO14443A, 0x38, 0, 0, { 0x00 }, NULL },
+    { MIFARE_DESFIRE,      "Mifare DESFire",               NMT_ISO14443A, 0x20, 5, 4, { 0x75, 0x77, 0x81, 0x02 /*, 0xXX */ }, NULL},
+    { MIFARE_DESFIRE,      "Cyanogenmod card emulation",   NMT_ISO14443A, 0x60, 4, 3, { 0x78, 0x33, 0x88 /*, 0xXX */ }, NULL},
+    { MIFARE_DESFIRE,      "Android HCE",                  NMT_ISO14443A, 0x60, 4, 3, { 0x78, 0x80, 0x70 /*, 0xXX */ }, NULL},
+    { MIFARE_ULTRALIGHT_C, "Mifare UltraLightC",           NMT_ISO14443A, 0x00, 0, 0, { 0x00 }, is_mifare_ultralightc_on_reader },
+    { MIFARE_ULTRALIGHT,   "Mifare UltraLight",            NMT_ISO14443A, 0x00, 0, 0, { 0x00 }, NULL },
 };
 
 #ifdef USE_LIBNFC
 /*
- * Automagically allocate a MifareTag given a device and target info.
+ * Automagically allocate a FreefareTag given a device and target info.
  */
-MifareTag
-freefare_tag_new (nfc_device *device, nfc_iso14443a_info nai)
+FreefareTag
+freefare_tag_new (nfc_device *device, nfc_target target)
 {
     bool found = false;
     struct supported_tag *tag_info;
-    MifareTag tag;
+    FreefareTag tag;
 
     /* Ensure the target is supported */
     for (size_t i = 0; i < sizeof (supported_tags) / sizeof (struct supported_tag); i++) {
-	if (((nai.szUidLen == 4) || (nai.abtUid[0] == NXP_MANUFACTURER_CODE)) &&
-	    (nai.btSak == supported_tags[i].SAK) &&
-	    (!supported_tags[i].ATS_min_length || ((nai.szAtsLen >= supported_tags[i].ATS_min_length) &&
-						   (0 == memcmp (nai.abtAts, supported_tags[i].ATS, supported_tags[i].ATS_compare_length)))) &&
+	if (target.nm.nmt != supported_tags[i].modulation_type)
+	    continue;
+
+	if (target.nm.nmt == NMT_FELICA) {
+	    tag_info = &(supported_tags[i]);
+	    found = true;
+	    break;
+	}
+	if ((target.nm.nmt == NMT_ISO14443A) && ((target.nti.nai.szUidLen == 4) || (target.nti.nai.abtUid[0] == NXP_MANUFACTURER_CODE)) &&
+	    (target.nti.nai.btSak == supported_tags[i].SAK) &&
+	    (!supported_tags[i].ATS_min_length || ((target.nti.nai.szAtsLen >= supported_tags[i].ATS_min_length) &&
+						   (0 == memcmp (target.nti.nai.abtAts, supported_tags[i].ATS, supported_tags[i].ATS_compare_length)))) &&
 	    ((supported_tags[i].check_tag_on_reader == NULL) ||
-	     supported_tags[i].check_tag_on_reader(device, nai))) {
+	     supported_tags[i].check_tag_on_reader(device, target.nti.nai))) {
 
 	    tag_info = &(supported_tags[i]);
 	    found = true;
@@ -92,15 +97,18 @@ freefare_tag_new (nfc_device *device, nfc_iso14443a_info nai)
 
     /* Allocate memory for the found MIFARE target */
     switch (tag_info->type) {
-    case CLASSIC_1K:
-    case CLASSIC_4K:
+    case FELICA:
+	tag = felica_tag_new ();
+	break;
+    case MIFARE_CLASSIC_1K:
+    case MIFARE_CLASSIC_4K:
 	tag = mifare_classic_tag_new ();
 	break;
-    case DESFIRE:
+    case MIFARE_DESFIRE:
 	tag = mifare_desfire_tag_new ();
 	break;
-    case ULTRALIGHT:
-    case ULTRALIGHT_C:
+    case MIFARE_ULTRALIGHT:
+    case MIFARE_ULTRALIGHT_C:
 	tag = mifare_ultralight_tag_new ();
 	break;
     }
@@ -113,7 +121,7 @@ freefare_tag_new (nfc_device *device, nfc_iso14443a_info nai)
      * (Target specific fields are initialized in mifare_*_tag_new())
      */
     tag->device = device;
-    tag->info = nai;
+    tag->info = target;
     tag->active = 0;
     tag->tag_info = tag_info;
 #ifdef USE_PCSC
@@ -277,10 +285,10 @@ freefare_tag_new_pcsc (struct pcsc_context *context, const char *reader)
  *
  * The list has to be freed using the freefare_free_tags() function.
  */
-MifareTag *
+FreefareTag *
 freefare_get_tags (nfc_device *device)
 {
-    MifareTag *tags = NULL;
+    FreefareTag *tags = NULL;
     int tag_count = 0;
     nfc_initiator_init(device);
 
@@ -310,10 +318,30 @@ freefare_get_tags (nfc_device *device)
     tags[0] = NULL;
 
     for (int c = 0; c < candidates_count; c++) {
-	MifareTag t;
-	if ((t = freefare_tag_new(device, candidates[c].nti.nai))) {
+	FreefareTag t;
+	if ((t = freefare_tag_new(device, candidates[c]))) {
 	    /* (Re)Allocate memory for the found MIFARE targets array */
-	    MifareTag *p = realloc (tags, (tag_count + 2) * sizeof (MifareTag));
+	    FreefareTag *p = realloc (tags, (tag_count + 2) * sizeof (FreefareTag));
+	    if (p)
+		tags = p;
+	    else
+		return tags; // FAIL! Return what has been found so far.
+	    tags[tag_count++] = t;
+	    tags[tag_count] = NULL;
+	}
+    }
+
+    // Poll for a FELICA tag
+    modulation.nmt = NMT_FELICA;
+    modulation.nbr = NBR_424; // FIXME NBR_212 should also be supported
+    if ((candidates_count = nfc_initiator_list_passive_targets(device, modulation, candidates, MAX_CANDIDATES)) < 0)
+	return NULL;
+
+    for (int c = 0; c < candidates_count; c++) {
+	FreefareTag t;
+	if ((t = freefare_tag_new(device, candidates[c]))) {
+	    /* (Re)Allocate memory for the found FELICA targets array */
+	    FreefareTag *p = realloc (tags, (tag_count + 2) * sizeof (FreefareTag));
 	    if (p)
 		tags = p;
 	    else
@@ -356,8 +384,8 @@ freefare_get_tags_pcsc (struct pcsc_context *context, const char *reader)
 /*
  * Returns the type of the provided tag.
  */
-enum mifare_tag_type
-freefare_get_tag_type (MifareTag tag)
+enum freefare_tag_type
+freefare_get_tag_type (FreefareTag tag)
 {
     return tag->tag_info->type;
 }
@@ -366,7 +394,7 @@ freefare_get_tag_type (MifareTag tag)
  * Returns the friendly name of the provided tag.
  */
 const char *
-freefare_get_tag_friendly_name (MifareTag tag)
+freefare_get_tag_friendly_name (FreefareTag tag)
 {
     return tag->tag_info->friendly_name;
 }
@@ -375,35 +403,64 @@ freefare_get_tag_friendly_name (MifareTag tag)
  * Returns the UID of the provided tag.
  */
 char *
-freefare_get_tag_uid (MifareTag tag)
+freefare_get_tag_uid (FreefareTag tag)
 {
     size_t i;
-   	char *res = (char *)malloc (2 * tag->info.szUidLen + 1);
-   	for (i =0; i < tag->info.szUidLen; i++)
-       	snprintf (res + 2*i, 3, "%02x", tag->info.abtUid[i]);
-   	return res;
+    char *res = NULL;
+    switch (tag->info.nm.nmt) {
+    case NMT_FELICA:
+	if ((res = malloc (17))) {
+	    for (i = 0; i < 8; i++)
+		snprintf (res + 2*i, 3, "%02x", tag->info.nti.nfi.abtId[i]);
+	}
+	break;
+    case NMT_ISO14443A:
+	if ((res = malloc (2 * tag->info.nti.nai.szUidLen + 1))) {
+	    for (i = 0; i < tag->info.nti.nai.szUidLen; i++)
+		snprintf (res + 2*i, 3, "%02x", tag->info.nti.nai.abtUid[i]);
+	}
+	break;
+    case NMT_DEP:
+    case NMT_ISO14443B2CT:
+    case NMT_ISO14443B2SR:
+    case NMT_ISO14443B:
+    case NMT_ISO14443BI:
+    case NMT_JEWEL:
+	res = strdup ("UNKNOWN");
+    }
+    return res;
+}
+
+/*
+ * Returns true if last selected tag is still present.
+ */
+bool freefare_selected_tag_is_present(nfc_device *device)
+{
+    return (nfc_initiator_target_is_present(device, NULL) == NFC_SUCCESS);
 }
 
 /*
  * Free the provided tag.
  */
 void
-freefare_free_tag (MifareTag tag)
+freefare_free_tag (FreefareTag tag)
 {
     if (tag) {
-        switch (tag->tag_info->type) 
-	{
-	    case CLASSIC_1K:
-	    case CLASSIC_4K:
-		mifare_classic_tag_free (tag);
-	    	break;
-	    case DESFIRE:
-		mifare_desfire_tag_free (tag);
-	    	break;
-	    case ULTRALIGHT:
-	    case ULTRALIGHT_C:
-		mifare_ultralight_tag_free (tag);
-		break;
+        switch (tag->tag_info->type) {
+        case FELICA:
+            felica_tag_free (tag);
+            break;
+        case MIFARE_CLASSIC_1K:
+        case MIFARE_CLASSIC_4K:
+            mifare_classic_tag_free (tag);
+            break;
+        case MIFARE_DESFIRE:
+            mifare_desfire_tag_free (tag);
+            break;
+        case MIFARE_ULTRALIGHT:
+        case MIFARE_ULTRALIGHT_C:
+            mifare_ultralight_tag_free (tag);
+            break;
         }
 #ifdef USE_PCSC
     if(tag->szReader)
@@ -413,7 +470,7 @@ freefare_free_tag (MifareTag tag)
 }
 
 const char *
-freefare_strerror (MifareTag tag)
+freefare_strerror (FreefareTag tag)
 {
     const char *p = "Unknown error";
 #if defined(USE_LIBNFC) && defined(USE_PCSC)
@@ -421,17 +478,17 @@ freefare_strerror (MifareTag tag)
 #endif
 #ifdef USE_LIBNFC
     {
-	if (nfc_device_get_last_error (tag->device) < 0) {
-	    p = nfc_strerror (tag->device);
-	} else {
-	    if (tag->tag_info->type == DESFIRE) {
-	    	if (MIFARE_DESFIRE (tag)->last_pcd_error) {
-		    p = mifare_desfire_error_lookup (MIFARE_DESFIRE (tag)->last_pcd_error);
-	    	} else if (MIFARE_DESFIRE (tag)->last_picc_error) {
-	            p = mifare_desfire_error_lookup (MIFARE_DESFIRE (tag)->last_picc_error);
-	    	}
-	    }
-	}
+        if (nfc_device_get_last_error (tag->device) < 0) {
+            p = nfc_strerror (tag->device);
+        } else {
+            if (tag->tag_info->type == MIFARE_DESFIRE) {
+                if (MIFARE_DESFIRE (tag)->last_pcd_error) {
+                    p = mifare_desfire_error_lookup (MIFARE_DESFIRE (tag)->last_pcd_error);
+                } else if (MIFARE_DESFIRE (tag)->last_picc_error) {
+                    p = mifare_desfire_error_lookup (MIFARE_DESFIRE (tag)->last_picc_error);
+                }
+            }
+        }
     }
 #endif
 #if defined(USE_LIBNFC) && defined(USE_PCSC)
@@ -439,35 +496,35 @@ freefare_strerror (MifareTag tag)
 #endif
 #ifdef USE_PCSC
     {
-	if (tag->lastPCSCerror != 0){
+        if (tag->lastPCSCerror != 0){
 #ifdef _WIN32
-    return "Internal PCSC error";
+            return "Internal PCSC error";
 #else
-	    p = (const char*) pcsc_stringify_error(tag->lastPCSCerror);
-    	    return p;
+            p = (const char*) pcsc_stringify_error(tag->lastPCSCerror);
+            return p;
 #endif
-	} else {
-	     if (tag->tag_info->type == DESFIRE) {
-		if (MIFARE_DESFIRE (tag)->last_pcd_error) {
-		    p = mifare_desfire_error_lookup (MIFARE_DESFIRE (tag)->last_pcd_error);
-		} else if (MIFARE_DESFIRE (tag)->last_picc_error) {
-		    p = mifare_desfire_error_lookup (MIFARE_DESFIRE (tag)->last_picc_error);
-		}   
-	    }   
-	}
+        } else {
+            if (tag->tag_info->type == DESFIRE) {
+                if (MIFARE_DESFIRE (tag)->last_pcd_error) {
+                    p = mifare_desfire_error_lookup (MIFARE_DESFIRE (tag)->last_pcd_error);
+                } else if (MIFARE_DESFIRE (tag)->last_picc_error) {
+                    p = mifare_desfire_error_lookup (MIFARE_DESFIRE (tag)->last_picc_error);
+                }
+            }
+        }
     }
 #endif
     return p;
 }
 
 int
-freefare_strerror_r (MifareTag tag, char *buffer, size_t len)
+freefare_strerror_r (FreefareTag tag, char *buffer, size_t len)
 {
     return (snprintf (buffer, len, "%s", freefare_strerror (tag)) < 0) ? -1 : 0;
 }
 
 void
-freefare_perror (MifareTag tag, const char *string)
+freefare_perror (FreefareTag tag, const char *string)
 {
     fprintf (stderr, "%s: %s\n", string, freefare_strerror (tag));
 }
@@ -476,7 +533,7 @@ freefare_perror (MifareTag tag, const char *string)
  * Free the provided tag list.
  */
 void
-freefare_free_tags (MifareTag *tags)
+freefare_free_tags (FreefareTag *tags)
 {
   int i;
     if (tags) {

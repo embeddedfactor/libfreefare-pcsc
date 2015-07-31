@@ -13,8 +13,6 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * 
- * $Id$
  */
 
 #include <cutter.h>
@@ -651,7 +649,7 @@ test_mifare_desfire_ev1_aes (void)
 
     for (int transaction = 0; transaction < 50; transaction++) {
 	char data_buffer[100];
-	char read_buffer[100+20]; // XXX
+	char read_buffer[100];
 
 	uint8_t cs = transaction % 3;
 	if (cs == 2) cs++;

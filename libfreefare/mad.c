@@ -13,8 +13,6 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- * $Id$
  */
 
 /*
@@ -181,7 +179,7 @@ sector_0x10_crc8 (Mad mad)
  * Read a MAD from the provided MIFARE tag.
  */
 Mad
-mad_read (MifareTag tag)
+mad_read (FreefareTag tag)
 {
     Mad mad = (Mad)malloc (sizeof (*mad));
 
@@ -280,7 +278,7 @@ error:
  * Write the mad to the provided MIFARE tad using the provided Key-B keys.
  */
 int
-mad_write (MifareTag tag, Mad mad, const MifareClassicKey key_b_sector_00, const MifareClassicKey key_b_sector_10)
+mad_write (FreefareTag tag, Mad mad, const MifareClassicKey key_b_sector_00, const MifareClassicKey key_b_sector_10)
 {
     MifareClassicBlock data;
 

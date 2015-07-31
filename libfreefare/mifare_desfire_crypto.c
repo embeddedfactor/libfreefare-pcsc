@@ -13,8 +13,6 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * 
- * $Id$
  */
 
 /*
@@ -272,7 +270,7 @@ maced_data_length (const MifareDESFireKey key, const size_t nbytes)
  * Buffer size required to encipher nbytes of data and a two bytes CRC.
  */
 size_t
-enciphered_data_length (const MifareTag tag, const size_t nbytes, int communication_settings)
+enciphered_data_length (const FreefareTag tag, const size_t nbytes, int communication_settings)
 {
     size_t crc_length = 0;
     if (!(communication_settings & NO_CRC)) {
@@ -296,7 +294,7 @@ enciphered_data_length (const MifareTag tag, const size_t nbytes, int communicat
  * Ensure that tag's crypto buffer is large enough to store nbytes of data.
  */
 void *
-assert_crypto_buffer_size (MifareTag tag, size_t nbytes)
+assert_crypto_buffer_size (FreefareTag tag, size_t nbytes)
 {
     uint8_t *res = MIFARE_DESFIRE (tag)->crypto_buffer;
     if (MIFARE_DESFIRE (tag)->crypto_buffer_size < nbytes) {
@@ -309,7 +307,7 @@ assert_crypto_buffer_size (MifareTag tag, size_t nbytes)
 }
 
 void *
-mifare_cryto_preprocess_data (MifareTag tag, void *data, size_t *nbytes, off_t offset, int communication_settings)
+mifare_cryto_preprocess_data (FreefareTag tag, void *data, size_t *nbytes, off_t offset, int communication_settings)
 {
     uint8_t *res = (uint8_t *)data;
     uint8_t mac[4];
@@ -448,7 +446,7 @@ mifare_cryto_preprocess_data (MifareTag tag, void *data, size_t *nbytes, off_t o
 }
 
 void *
-mifare_cryto_postprocess_data (MifareTag tag, void *data, ssize_t *nbytes, int communication_settings)
+mifare_cryto_postprocess_data (FreefareTag tag, void *data, ssize_t *nbytes, int communication_settings)
 {
     uint8_t *res = (uint8_t *)data;
     size_t edl;
@@ -492,7 +490,8 @@ mifare_cryto_postprocess_data (MifareTag tag, void *data, ssize_t *nbytes, int c
 		}
 
 		edl = enciphered_data_length (tag, *nbytes - 1, communication_settings);
-		edata = (uint8_t *)malloc (edl);
+		if (!(edata = malloc (edl)))
+		    abort ();
 
 		memcpy (edata, data, *nbytes - 1);
 		memset ((uint8_t *)edata + *nbytes - 1, 0, edl - *nbytes + 1);
@@ -766,7 +765,7 @@ mifare_cypher_single_block (MifareDESFireKey key, uint8_t *data, uint8_t *ivect,
  * function with tag, key and ivect defined.
  */
 void
-mifare_cypher_blocks_chained (MifareTag tag, MifareDESFireKey key, uint8_t *ivect, uint8_t *data, size_t data_size, MifareCryptoDirection direction, MifareCryptoOperation operation)
+mifare_cypher_blocks_chained (FreefareTag tag, MifareDESFireKey key, uint8_t *ivect, uint8_t *data, size_t data_size, MifareCryptoDirection direction, MifareCryptoOperation operation)
 {
     size_t block_size;
 

@@ -13,8 +13,6 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * 
- * $Id$
  */
 
 /*
@@ -105,11 +103,11 @@ struct mifare_desfire_raw_file_settings {
 static struct mifare_desfire_file_settings cached_file_settings[MAX_FILE_COUNT];
 static bool cached_file_settings_current[MAX_FILE_COUNT];
 
-static int	 authenticate (MifareTag tag, uint8_t cmd, uint8_t key_no, MifareDESFireKey key);
-static int	 create_file1 (MifareTag tag, uint8_t command, uint8_t file_no, int has_iso_file_id, uint16_t iso_file_id, uint8_t communication_settings, uint16_t access_rights, uint32_t file_size);
-static int	 create_file2 (MifareTag tag, uint8_t command, uint8_t file_no, int has_iso_file_id, uint16_t iso_file_id, uint8_t communication_settings, uint16_t access_rights, uint32_t record_size, uint32_t max_number_of_records);
-static ssize_t	 write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, const void *data, int cs);
-static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *data, int cs);
+static int	 authenticate (FreefareTag tag, uint8_t cmd, uint8_t key_no, MifareDESFireKey key);
+static int	 create_file1 (FreefareTag tag, uint8_t command, uint8_t file_no, int has_iso_file_id, uint16_t iso_file_id, uint8_t communication_settings, uint16_t access_rights, uint32_t file_size);
+static int	 create_file2 (FreefareTag tag, uint8_t command, uint8_t file_no, int has_iso_file_id, uint16_t iso_file_id, uint8_t communication_settings, uint16_t access_rights, uint32_t record_size, uint32_t max_number_of_records);
+static ssize_t	 write_data (FreefareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, const void *data, int cs);
+static ssize_t	 read_data (FreefareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *data, int cs);
 
 #define NOT_YET_AUTHENTICATED 255
 
@@ -297,7 +295,7 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
 static int32_t	 le24toh (uint8_t data[3]);
 
 static int
-madame_soleil_get_read_communication_settings (MifareTag tag, uint8_t file_no)
+madame_soleil_get_read_communication_settings (FreefareTag tag, uint8_t file_no)
 {
     struct mifare_desfire_file_settings settings;
     if (mifare_desfire_get_file_settings (tag, file_no, &settings))
@@ -311,7 +309,7 @@ madame_soleil_get_read_communication_settings (MifareTag tag, uint8_t file_no)
 }
 
 static int
-madame_soleil_get_write_communication_settings (MifareTag tag, uint8_t file_no)
+madame_soleil_get_write_communication_settings (FreefareTag tag, uint8_t file_no)
 {
     struct mifare_desfire_file_settings settings;
     if (mifare_desfire_get_file_settings (tag, file_no, &settings))
@@ -338,11 +336,11 @@ le24toh (uint8_t data[3])
 /*
  * Allocates and initialize a MIFARE DESFire tag.
  */
-MifareTag
+FreefareTag
 mifare_desfire_tag_new (void)
 {
-    MifareTag tag;
-    if ((tag= (MifareTag)malloc (sizeof (struct mifare_desfire_tag)))) {
+    FreefareTag tag;
+    if ((tag= malloc (sizeof (struct mifare_desfire_tag)))) {
 	MIFARE_DESFIRE (tag)->last_picc_error = OPERATION_OK;
 	MIFARE_DESFIRE (tag)->last_pcd_error = OPERATION_OK;
 	MIFARE_DESFIRE (tag)->session_key = NULL;
@@ -356,7 +354,7 @@ mifare_desfire_tag_new (void)
  * Free the provided tag.
  */
 void
-mifare_desfire_tag_free (MifareTag tag)
+mifare_desfire_tag_free (FreefareTag tag)
 {
     free (MIFARE_DESFIRE (tag)->session_key);
     free (MIFARE_DESFIRE (tag)->crypto_buffer);
@@ -376,7 +374,7 @@ mifare_desfire_tag_free (MifareTag tag)
  * Establish connection to the provided tag.
  */
 int
-mifare_desfire_connect (MifareTag tag)
+mifare_desfire_connect (FreefareTag tag)
 {
     ASSERT_INACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
@@ -391,7 +389,7 @@ mifare_desfire_connect (MifareTag tag)
 	.nmt = NMT_ISO14443A,
 	.nbr = NBR_424
     };
-    if (nfc_initiator_select_passive_target (tag->device, modulation, tag->info.abtUid, tag->info.szUidLen, &pnti) >= 0) {
+    if (nfc_initiator_select_passive_target (tag->device, modulation, tag->info.nti.nai.abtUid, tag->info.nti.nai.szUidLen, &pnti) >= 0) {
 	// The registered ISO AID of DESFire D2760000850100
 	// Selecting this AID selects the MF
 	BUFFER_INIT (cmd, 12);
@@ -450,7 +448,7 @@ mifare_desfire_connect (MifareTag tag)
  * Terminate connection with the provided tag.
  */
 int
-mifare_desfire_disconnect (MifareTag tag)
+mifare_desfire_disconnect (FreefareTag tag)
 {
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
@@ -492,7 +490,7 @@ mifare_desfire_disconnect (MifareTag tag)
 #define AUTHENTICATE_AES 0xAA
 
 static int
-authenticate (MifareTag tag, uint8_t cmd, uint8_t key_no, MifareDESFireKey key)
+authenticate (FreefareTag tag, uint8_t cmd, uint8_t key_no, MifareDESFireKey key)
 {
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
@@ -585,7 +583,7 @@ authenticate (MifareTag tag, uint8_t cmd, uint8_t key_no, MifareDESFireKey key)
 }
 
 int
-mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key)
+mifare_desfire_authenticate (FreefareTag tag, uint8_t key_no, MifareDESFireKey key)
 {
     switch (key->type) {
     case T_DES:
@@ -604,19 +602,19 @@ mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key
 }
 
 int
-mifare_desfire_authenticate_iso (MifareTag tag, uint8_t key_no, MifareDESFireKey key)
+mifare_desfire_authenticate_iso (FreefareTag tag, uint8_t key_no, MifareDESFireKey key)
 {
     return authenticate (tag, AUTHENTICATE_ISO, key_no, key);
 }
 
 int
-mifare_desfire_authenticate_aes (MifareTag tag, uint8_t key_no, MifareDESFireKey key)
+mifare_desfire_authenticate_aes (FreefareTag tag, uint8_t key_no, MifareDESFireKey key)
 {
     return authenticate (tag, AUTHENTICATE_AES, key_no, key);
 }
 
 int
-mifare_desfire_change_key_settings (MifareTag tag, uint8_t settings)
+mifare_desfire_change_key_settings (FreefareTag tag, uint8_t settings)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -645,7 +643,7 @@ mifare_desfire_change_key_settings (MifareTag tag, uint8_t settings)
 }
 
 int
-mifare_desfire_get_key_settings (MifareTag tag, uint8_t *settings, uint8_t *max_keys)
+mifare_desfire_get_key_settings (FreefareTag tag, uint8_t *settings, uint8_t *max_keys)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -677,7 +675,7 @@ mifare_desfire_get_key_settings (MifareTag tag, uint8_t *settings, uint8_t *max_
 }
 
 int
-mifare_desfire_change_key (MifareTag tag, uint8_t key_no, MifareDESFireKey new_key, MifareDESFireKey old_key)
+mifare_desfire_change_key (FreefareTag tag, uint8_t key_no, MifareDESFireKey new_key, MifareDESFireKey old_key)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -794,7 +792,7 @@ mifare_desfire_change_key (MifareTag tag, uint8_t key_no, MifareDESFireKey new_k
  * Retrieve version information for a given key.
  */
 int
-mifare_desfire_get_key_version (MifareTag tag, uint8_t key_no, uint8_t *version)
+mifare_desfire_get_key_version (FreefareTag tag, uint8_t key_no, uint8_t *version)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -828,7 +826,7 @@ mifare_desfire_get_key_version (MifareTag tag, uint8_t key_no, uint8_t *version)
 
 
 static int
-create_application (MifareTag tag, MifareDESFireAID aid, uint8_t settings1, uint8_t settings2, int want_iso_application, int want_iso_file_identifiers, uint16_t iso_file_id, uint8_t *iso_file_name, size_t iso_file_name_len)
+create_application (FreefareTag tag, MifareDESFireAID aid, uint8_t settings1, uint8_t settings2, int want_iso_application, int want_iso_file_identifiers, uint16_t iso_file_id, uint8_t *iso_file_name, size_t iso_file_name_len)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -868,43 +866,43 @@ create_application (MifareTag tag, MifareDESFireAID aid, uint8_t settings1, uint
 }
 
 int
-mifare_desfire_create_application (MifareTag tag, MifareDESFireAID aid, uint8_t settings, uint8_t key_no)
+mifare_desfire_create_application (FreefareTag tag, MifareDESFireAID aid, uint8_t settings, uint8_t key_no)
 {
     return create_application (tag, aid, settings, key_no, 0, 0, 0, NULL, 0);
 }
 
 int
-mifare_desfire_create_application_iso (MifareTag tag, MifareDESFireAID aid, uint8_t settings, uint8_t key_no, int want_iso_file_identifiers, uint16_t iso_file_id, uint8_t *iso_file_name, size_t iso_file_name_len)
+mifare_desfire_create_application_iso (FreefareTag tag, MifareDESFireAID aid, uint8_t settings, uint8_t key_no, int want_iso_file_identifiers, uint16_t iso_file_id, uint8_t *iso_file_name, size_t iso_file_name_len)
 {
     return create_application (tag, aid, settings, key_no, 1, want_iso_file_identifiers, iso_file_id, iso_file_name, iso_file_name_len);
 }
 
 int
-mifare_desfire_create_application_3k3des (MifareTag tag, MifareDESFireAID aid, uint8_t settings, uint8_t key_no)
+mifare_desfire_create_application_3k3des (FreefareTag tag, MifareDESFireAID aid, uint8_t settings, uint8_t key_no)
 {
     return create_application (tag, aid, settings, APPLICATION_CRYPTO_3K3DES | key_no, 0, 0, 0, NULL, 0);
 }
 
 int
-mifare_desfire_create_application_3k3des_iso (MifareTag tag, MifareDESFireAID aid, uint8_t settings, uint8_t key_no, int want_iso_file_identifiers, uint16_t iso_file_id, uint8_t *iso_file_name, size_t iso_file_name_len)
+mifare_desfire_create_application_3k3des_iso (FreefareTag tag, MifareDESFireAID aid, uint8_t settings, uint8_t key_no, int want_iso_file_identifiers, uint16_t iso_file_id, uint8_t *iso_file_name, size_t iso_file_name_len)
 {
     return create_application (tag, aid, settings, APPLICATION_CRYPTO_3K3DES | key_no, 1, want_iso_file_identifiers, iso_file_id, iso_file_name, iso_file_name_len);
 }
 
 int
-mifare_desfire_create_application_aes (MifareTag tag, MifareDESFireAID aid, uint8_t settings, uint8_t key_no)
+mifare_desfire_create_application_aes (FreefareTag tag, MifareDESFireAID aid, uint8_t settings, uint8_t key_no)
 {
     return create_application (tag, aid, settings, APPLICATION_CRYPTO_AES | key_no, 0, 0, 0, NULL, 0);
 }
 
 int
-mifare_desfire_create_application_aes_iso (MifareTag tag, MifareDESFireAID aid, uint8_t settings, uint8_t key_no, int want_iso_file_identifiers, uint16_t iso_file_id, uint8_t *iso_file_name, size_t iso_file_name_len)
+mifare_desfire_create_application_aes_iso (FreefareTag tag, MifareDESFireAID aid, uint8_t settings, uint8_t key_no, int want_iso_file_identifiers, uint16_t iso_file_id, uint8_t *iso_file_name, size_t iso_file_name_len)
 {
     return create_application (tag, aid, settings, APPLICATION_CRYPTO_AES | key_no, 1, want_iso_file_identifiers, iso_file_id, iso_file_name, iso_file_name_len);
 }
 
 int
-mifare_desfire_delete_application (MifareTag tag, MifareDESFireAID aid)
+mifare_desfire_delete_application (FreefareTag tag, MifareDESFireAID aid)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -944,7 +942,7 @@ mifare_desfire_delete_application (MifareTag tag, MifareDESFireAID aid)
 }
 
 int
-mifare_desfire_get_application_ids (MifareTag tag, MifareDESFireAID *aids[], size_t *count)
+mifare_desfire_get_application_ids (FreefareTag tag, MifareDESFireAID *aids[], size_t *count)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -1009,7 +1007,7 @@ mifare_desfire_get_application_ids (MifareTag tag, MifareDESFireAID *aids[], siz
 }
 
 int
-mifare_desfire_get_df_names (MifareTag tag, MifareDESFireDF *dfs[], size_t *count)
+mifare_desfire_get_df_names (FreefareTag tag, MifareDESFireDF *dfs[], size_t *count)
 {
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
@@ -1061,7 +1059,7 @@ mifare_desfire_free_application_ids (MifareDESFireAID aids[])
  * NULL, the master application is selected (equivalent to aid = 0x00000).
  */
 int
-mifare_desfire_select_application (MifareTag tag, MifareDESFireAID aid)
+mifare_desfire_select_application (FreefareTag tag, MifareDESFireAID aid)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -1105,7 +1103,7 @@ mifare_desfire_select_application (MifareTag tag, MifareDESFireAID aid)
 }
 
 int
-mifare_desfire_format_picc (MifareTag tag)
+mifare_desfire_format_picc (FreefareTag tag)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -1141,7 +1139,7 @@ mifare_desfire_format_picc (MifareTag tag)
  * Retrieve version information form the PICC.
  */
 int
-mifare_desfire_get_version (MifareTag tag, struct mifare_desfire_version_info *version_info)
+mifare_desfire_get_version (FreefareTag tag, struct mifare_desfire_version_info *version_info)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -1183,7 +1181,7 @@ mifare_desfire_get_version (MifareTag tag, struct mifare_desfire_version_info *v
 }
 
 int
-mifare_desfire_free_mem (MifareTag tag, uint32_t *size)
+mifare_desfire_free_mem (FreefareTag tag, uint32_t *size)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -1216,7 +1214,7 @@ mifare_desfire_free_mem (MifareTag tag, uint32_t *size)
 }
 
 int
-mifare_desfire_set_configuration (MifareTag tag, bool disable_format, bool enable_random_uid)
+mifare_desfire_set_configuration (FreefareTag tag, bool disable_format, bool enable_random_uid)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -1247,7 +1245,7 @@ mifare_desfire_set_configuration (MifareTag tag, bool disable_format, bool enabl
 }
 
 int
-mifare_desfire_set_default_key (MifareTag tag, MifareDESFireKey key)
+mifare_desfire_set_default_key (FreefareTag tag, MifareDESFireKey key)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -1291,7 +1289,7 @@ mifare_desfire_set_default_key (MifareTag tag, MifareDESFireKey key)
 }
 
 int
-mifare_desfire_set_ats (MifareTag tag, uint8_t *ats)
+mifare_desfire_set_ats (FreefareTag tag, uint8_t *ats)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -1332,7 +1330,7 @@ mifare_desfire_set_ats (MifareTag tag, uint8_t *ats)
 }
 
 int
-mifare_desfire_get_card_uid (MifareTag tag, char **uid)
+mifare_desfire_get_card_uid (FreefareTag tag, char **uid)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -1374,7 +1372,7 @@ mifare_desfire_get_card_uid (MifareTag tag, char **uid)
 /* Application level commands */
 
 int
-mifare_desfire_get_file_ids (MifareTag tag, uint8_t *files[], size_t *count)
+mifare_desfire_get_file_ids (FreefareTag tag, uint8_t **files, size_t *count)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -1413,7 +1411,7 @@ mifare_desfire_get_file_ids (MifareTag tag, uint8_t *files[], size_t *count)
 }
 
 int
-mifare_desfire_get_iso_file_ids (MifareTag tag, uint16_t *files[], size_t *count)
+mifare_desfire_get_iso_file_ids (FreefareTag tag, uint16_t **files, size_t *count)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -1462,13 +1460,13 @@ mifare_desfire_get_iso_file_ids (MifareTag tag, uint16_t *files[], size_t *count
 
     BUFFER_FREE(cmd);
     BUFFER_FREE(res);
+    free (data);
 
-
-    return result;
+    return 0;
 }
 
 int
-mifare_desfire_get_file_settings (MifareTag tag, uint8_t file_no, struct mifare_desfire_file_settings *settings)
+mifare_desfire_get_file_settings (FreefareTag tag, uint8_t file_no, struct mifare_desfire_file_settings *settings)
 {
   int result = 0;
     ASSERT_ACTIVE (tag);
@@ -1532,7 +1530,7 @@ mifare_desfire_get_file_settings (MifareTag tag, uint8_t file_no, struct mifare_
 }
 
 int
-mifare_desfire_change_file_settings (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights)
+mifare_desfire_change_file_settings (FreefareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -1591,7 +1589,7 @@ mifare_desfire_change_file_settings (MifareTag tag, uint8_t file_no, uint8_t com
 }
 
 static int
-create_file1 (MifareTag tag, uint8_t command, uint8_t file_no, int has_iso_file_id, uint16_t iso_file_id,  uint8_t communication_settings, uint16_t access_rights, uint32_t file_size)
+create_file1 (FreefareTag tag, uint8_t command, uint8_t file_no, int has_iso_file_id, uint16_t iso_file_id,  uint8_t communication_settings, uint16_t access_rights, uint32_t file_size)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -1628,31 +1626,31 @@ create_file1 (MifareTag tag, uint8_t command, uint8_t file_no, int has_iso_file_
 }
 
 int
-mifare_desfire_create_std_data_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t file_size)
+mifare_desfire_create_std_data_file (FreefareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t file_size)
 {
     return create_file1 (tag, 0xCD, file_no, 0, 0x0000, communication_settings, access_rights, file_size);
 }
 
 int
-mifare_desfire_create_std_data_file_iso (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t file_size, uint16_t iso_file_id)
+mifare_desfire_create_std_data_file_iso (FreefareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t file_size, uint16_t iso_file_id)
 {
     return create_file1 (tag, 0xCD, file_no, 1, iso_file_id, communication_settings, access_rights, file_size);
 }
 
 int
-mifare_desfire_create_backup_data_file  (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t file_size)
+mifare_desfire_create_backup_data_file  (FreefareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t file_size)
 {
     return create_file1 (tag, 0xCB, file_no, 0, 0x0000, communication_settings, access_rights, file_size);
 }
 
 int
-mifare_desfire_create_backup_data_file_iso (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t file_size, uint16_t iso_file_id)
+mifare_desfire_create_backup_data_file_iso (FreefareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t file_size, uint16_t iso_file_id)
 {
     return create_file1 (tag, 0xCB, file_no, 1, iso_file_id, communication_settings, access_rights, file_size);
 }
 
 int
-mifare_desfire_create_value_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, int32_t lower_limit, int32_t upper_limit, int32_t value, uint8_t limited_credit_enable)
+mifare_desfire_create_value_file (FreefareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, int32_t lower_limit, int32_t upper_limit, int32_t value, uint8_t limited_credit_enable)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -1690,7 +1688,7 @@ mifare_desfire_create_value_file (MifareTag tag, uint8_t file_no, uint8_t commun
 }
 
 static int
-create_file2 (MifareTag tag, uint8_t command, uint8_t file_no, int has_iso_file_id, uint16_t iso_file_id, uint8_t communication_settings, uint16_t access_rights, uint32_t record_size, uint32_t max_number_of_records)
+create_file2 (FreefareTag tag, uint8_t command, uint8_t file_no, int has_iso_file_id, uint16_t iso_file_id, uint8_t communication_settings, uint16_t access_rights, uint32_t record_size, uint32_t max_number_of_records)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -1728,31 +1726,31 @@ create_file2 (MifareTag tag, uint8_t command, uint8_t file_no, int has_iso_file_
 }
 
 int
-mifare_desfire_create_linear_record_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t record_size, uint32_t max_number_of_records)
+mifare_desfire_create_linear_record_file (FreefareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t record_size, uint32_t max_number_of_records)
 {
     return create_file2 (tag, 0xC1, file_no, 0, 0x0000, communication_settings, access_rights, record_size, max_number_of_records);
 }
 
 int
-mifare_desfire_create_linear_record_file_iso (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t record_size, uint32_t max_number_of_records, uint16_t iso_file_id)
+mifare_desfire_create_linear_record_file_iso (FreefareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t record_size, uint32_t max_number_of_records, uint16_t iso_file_id)
 {
     return create_file2 (tag, 0xC1, file_no, 1, iso_file_id, communication_settings, access_rights, record_size, max_number_of_records);
 }
 
 int
-mifare_desfire_create_cyclic_record_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t record_size, uint32_t max_number_of_records)
+mifare_desfire_create_cyclic_record_file (FreefareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t record_size, uint32_t max_number_of_records)
 {
     return create_file2 (tag, 0xC0, file_no, 0, 0x000, communication_settings, access_rights, record_size, max_number_of_records);
 }
 
 int
-mifare_desfire_create_cyclic_record_file_iso (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t record_size, uint32_t max_number_of_records, uint16_t iso_file_id)
+mifare_desfire_create_cyclic_record_file_iso (FreefareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t record_size, uint32_t max_number_of_records, uint16_t iso_file_id)
 {
     return create_file2 (tag, 0xC0, file_no, 1, iso_file_id, communication_settings, access_rights, record_size, max_number_of_records);
 }
 
 int
-mifare_desfire_delete_file (MifareTag tag, uint8_t file_no)
+mifare_desfire_delete_file (FreefareTag tag, uint8_t file_no)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -1787,7 +1785,7 @@ mifare_desfire_delete_file (MifareTag tag, uint8_t file_no)
  */
 
 static ssize_t
-read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *data, int cs)
+read_data (FreefareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *data, int cs)
 {
     int result = 0;
     size_t bytes_received = 0;
@@ -1809,12 +1807,40 @@ read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t
      * length in order to allocate a large enought buffer for crypto
      * post-processing.
      */
+    int record_size = 1;
+
+    struct mifare_desfire_file_settings settings;
+    int r = mifare_desfire_get_file_settings (tag, file_no, &settings);
+    if (r < 0)
+	return r;
+
+    switch (settings.file_type) {
+    case MDFT_STANDARD_DATA_FILE:
+    case MDFT_BACKUP_DATA_FILE:
+    case MDFT_VALUE_FILE_WITH_BACKUP:
+	/* NOOP */
+	break;
+    case MDFT_LINEAR_RECORD_FILE_WITH_BACKUP:
+    case MDFT_CYCLIC_RECORD_FILE_WITH_BACKUP:
+	// length indicates a number of records, we need the record size to
+	// allocate enougth memory.
+	record_size = settings.settings.linear_record_file.record_size;
+	break;
+    }
     if (!length) {
-	struct mifare_desfire_file_settings settings;
-	int res = mifare_desfire_get_file_settings (tag, file_no, &settings);
-	if (res < 0)
-	    return res;
-	length = settings.settings.standard_file.file_size;
+	switch (settings.file_type) {
+	case MDFT_STANDARD_DATA_FILE:
+	case MDFT_BACKUP_DATA_FILE:
+	    length = settings.settings.standard_file.file_size;
+	    break;
+	case MDFT_VALUE_FILE_WITH_BACKUP:
+	    abort();
+	    break;
+	case MDFT_LINEAR_RECORD_FILE_WITH_BACKUP:
+	case MDFT_CYCLIC_RECORD_FILE_WITH_BACKUP:
+	    length = settings.settings.linear_record_file.current_number_of_records;
+	    break;
+	}
     }
 
     uint8_t ocs = cs;
@@ -1840,7 +1866,7 @@ read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t
      * through the cryptography code and copy the actual data to the
      * destination buffer.
      */
-    uint8_t *read_buffer = malloc (enciphered_data_length (tag, length, 0) + 1);
+    uint8_t *read_buffer = malloc (enciphered_data_length (tag, length * record_size, 0) + 1);
 
     do {
 	DESFIRE_TRANSCEIVE2 (tag, p, __cmd_n, res);
@@ -1875,19 +1901,19 @@ read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t
 }
 
 ssize_t
-mifare_desfire_read_data (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *data)
+mifare_desfire_read_data (FreefareTag tag, uint8_t file_no, off_t offset, size_t length, void *data)
 {
     return mifare_desfire_read_data_ex (tag, file_no, offset, length, data, madame_soleil_get_read_communication_settings (tag, file_no));
 }
 
 ssize_t
-mifare_desfire_read_data_ex (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *data, int cs)
+mifare_desfire_read_data_ex (FreefareTag tag, uint8_t file_no, off_t offset, size_t length, void *data, int cs)
 {
     return read_data (tag, 0xBD, file_no, offset, length, data, cs);
 }
 
 static ssize_t
-write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, const void *data, int cs)
+write_data (FreefareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, const void *data, int cs)
 {
     int result = 0;
     size_t bytes_left;
@@ -1955,24 +1981,24 @@ write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_
 }
 
 ssize_t
-mifare_desfire_write_data (MifareTag tag, uint8_t file_no, off_t offset, size_t length, const void *data)
+mifare_desfire_write_data (FreefareTag tag, uint8_t file_no, off_t offset, size_t length, const void *data)
 {
     return mifare_desfire_write_data_ex (tag, file_no, offset, length, data, madame_soleil_get_write_communication_settings (tag, file_no));
 }
 
 ssize_t
-mifare_desfire_write_data_ex (MifareTag tag, uint8_t file_no, off_t offset, size_t length, const void *data, int cs)
+mifare_desfire_write_data_ex (FreefareTag tag, uint8_t file_no, off_t offset, size_t length, const void *data, int cs)
 {
     return write_data (tag, 0x3D, file_no, offset, length, data, cs);
 }
 
 int
-mifare_desfire_get_value (MifareTag tag, uint8_t file_no, int32_t *value)
+mifare_desfire_get_value (FreefareTag tag, uint8_t file_no, int32_t *value)
 {
     return mifare_desfire_get_value_ex (tag, file_no, value, madame_soleil_get_read_communication_settings (tag, file_no));
 }
 int
-mifare_desfire_get_value_ex (MifareTag tag, uint8_t file_no, int32_t *value, int cs)
+mifare_desfire_get_value_ex (FreefareTag tag, uint8_t file_no, int32_t *value, int cs)
 {
     int result = 0;
     if (!value)
@@ -2007,13 +2033,13 @@ mifare_desfire_get_value_ex (MifareTag tag, uint8_t file_no, int32_t *value, int
 }
 
 int
-mifare_desfire_credit (MifareTag tag, uint8_t file_no, int32_t amount)
+mifare_desfire_credit (FreefareTag tag, uint8_t file_no, int32_t amount)
 {
     return mifare_desfire_credit_ex (tag, file_no, amount, madame_soleil_get_write_communication_settings (tag, file_no));
 }
 
 int
-mifare_desfire_credit_ex (MifareTag tag, uint8_t file_no, int32_t amount, int cs)
+mifare_desfire_credit_ex (FreefareTag tag, uint8_t file_no, int32_t amount, int cs)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -2045,12 +2071,12 @@ mifare_desfire_credit_ex (MifareTag tag, uint8_t file_no, int32_t amount, int cs
 }
 
 int
-mifare_desfire_debit (MifareTag tag, uint8_t file_no, int32_t amount)
+mifare_desfire_debit (FreefareTag tag, uint8_t file_no, int32_t amount)
 {
     return mifare_desfire_debit_ex (tag, file_no, amount, madame_soleil_get_write_communication_settings (tag, file_no));
 }
 int
-mifare_desfire_debit_ex (MifareTag tag, uint8_t file_no, int32_t amount, int cs)
+mifare_desfire_debit_ex (FreefareTag tag, uint8_t file_no, int32_t amount, int cs)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -2082,12 +2108,12 @@ mifare_desfire_debit_ex (MifareTag tag, uint8_t file_no, int32_t amount, int cs)
 }
 
 int
-mifare_desfire_limited_credit (MifareTag tag, uint8_t file_no, int32_t amount)
+mifare_desfire_limited_credit (FreefareTag tag, uint8_t file_no, int32_t amount)
 {
     return mifare_desfire_limited_credit_ex (tag, file_no, amount, madame_soleil_get_write_communication_settings (tag, file_no));
 }
 int
-mifare_desfire_limited_credit_ex (MifareTag tag, uint8_t file_no, int32_t amount, int cs)
+mifare_desfire_limited_credit_ex (FreefareTag tag, uint8_t file_no, int32_t amount, int cs)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -2118,30 +2144,30 @@ mifare_desfire_limited_credit_ex (MifareTag tag, uint8_t file_no, int32_t amount
 }
 
 ssize_t
-mifare_desfire_write_record (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *data)
+mifare_desfire_write_record (FreefareTag tag, uint8_t file_no, off_t offset, size_t length, void *data)
 {
     return mifare_desfire_write_record_ex (tag, file_no, offset, length, data, madame_soleil_get_write_communication_settings (tag, file_no));
 }
 ssize_t
-mifare_desfire_write_record_ex (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *data, int cs)
+mifare_desfire_write_record_ex (FreefareTag tag, uint8_t file_no, off_t offset, size_t length, void *data, int cs)
 {
     return write_data (tag, 0x3B, file_no, offset, length, data, cs);
 }
 
 ssize_t
-mifare_desfire_read_records (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *data)
+mifare_desfire_read_records (FreefareTag tag, uint8_t file_no, off_t offset, size_t length, void *data)
 {
     return mifare_desfire_read_records_ex (tag, file_no, offset, length, data, madame_soleil_get_read_communication_settings (tag, file_no));
 }
 
 ssize_t
-mifare_desfire_read_records_ex (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *data, int cs)
+mifare_desfire_read_records_ex (FreefareTag tag, uint8_t file_no, off_t offset, size_t length, void *data, int cs)
 {
     return read_data (tag, 0xBB, file_no, offset, length, data, cs);
 }
 
 int
-mifare_desfire_clear_record_file (MifareTag tag, uint8_t file_no)
+mifare_desfire_clear_record_file (FreefareTag tag, uint8_t file_no)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -2171,7 +2197,7 @@ mifare_desfire_clear_record_file (MifareTag tag, uint8_t file_no)
 }
 
 int
-mifare_desfire_commit_transaction (MifareTag tag)
+mifare_desfire_commit_transaction (FreefareTag tag)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);
@@ -2199,7 +2225,7 @@ mifare_desfire_commit_transaction (MifareTag tag)
 }
 
 int
-mifare_desfire_abort_transaction (MifareTag tag)
+mifare_desfire_abort_transaction (FreefareTag tag)
 {
     int result = 0;
     ASSERT_ACTIVE (tag);

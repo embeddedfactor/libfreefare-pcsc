@@ -13,8 +13,6 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * 
- * $Id$
  */
 
 #include "config.h"
@@ -69,7 +67,7 @@ uint8_t *ndef_msg;
 size_t  ndef_msg_len;
 
 static int
-search_sector_key (MifareTag tag, MifareClassicSectorNumber sector, MifareClassicKey *key, MifareClassicKeyType *key_type)
+search_sector_key (FreefareTag tag, MifareClassicSectorNumber sector, MifareClassicKey *key, MifareClassicKeyType *key_type)
 {
     MifareClassicBlockNumber block = mifare_classic_sector_last_block (sector);
 
@@ -107,7 +105,7 @@ search_sector_key (MifareTag tag, MifareClassicSectorNumber sector, MifareClassi
 }
 
 static int
-fix_mad_trailer_block (nfc_device *device, MifareTag tag, MifareClassicSectorNumber sector, MifareClassicKey key, MifareClassicKeyType key_type)
+fix_mad_trailer_block (nfc_device *device, FreefareTag tag, MifareClassicSectorNumber sector, MifareClassicKey key, MifareClassicKeyType key_type)
 {
     MifareClassicBlock block;
     mifare_classic_trailer_block (&block, mad_public_key_a, 0x0, 0x1, 0x1, 0x6, 0x00, default_keyb);
@@ -136,7 +134,7 @@ main(int argc, char *argv[])
 {
     int error = 0;
     nfc_device *device = NULL;
-    MifareTag *tags = NULL;
+    FreefareTag *tags = NULL;
     Mad mad;
     MifareClassicKey transport_key = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
@@ -205,7 +203,7 @@ main(int argc, char *argv[])
 
     nfc_connstring devices[8];
     size_t device_count;
-    
+
     nfc_context *context;
     nfc_init (&context);
     if (context == NULL)
@@ -231,8 +229,8 @@ main(int argc, char *argv[])
 
 	for (int i = 0; (!error) && tags[i]; i++) {
 	    switch (freefare_get_tag_type (tags[i])) {
-	    case CLASSIC_1K:
-	    case CLASSIC_4K:
+	    case MIFARE_CLASSIC_1K:
+	    case MIFARE_CLASSIC_4K:
 		break;
 	    default:
 		continue;
@@ -245,13 +243,13 @@ main(int argc, char *argv[])
 
 	    bool write_ndef = true;
 	    if (write_options.interactive) {
-	    	printf ("Write NDEF [yN] ");
-	    	fgets (buffer, BUFSIZ, stdin);
-	    	write_ndef = ((buffer[0] == 'y') || (buffer[0] == 'Y'));
+		printf ("Write NDEF [yN] ");
+		fgets (buffer, BUFSIZ, stdin);
+		write_ndef = ((buffer[0] == 'y') || (buffer[0] == 'Y'));
 	    } else {
-	    	printf ("\n");
+		printf ("\n");
 	    }
-	    	   
+
 	    for (int n = 0; n < 40; n++) {
 		memcpy(card_write_keys[n].key, transport_key, sizeof (transport_key));
 		card_write_keys[n].type = MFC_KEY_A;
@@ -259,13 +257,13 @@ main(int argc, char *argv[])
 
 	    if (write_ndef) {
 		switch (freefare_get_tag_type (tags[i])) {
-		case CLASSIC_4K:
+		case MIFARE_CLASSIC_4K:
 		    if (!search_sector_key (tags[i], 0x10, &(card_write_keys[0x10].key), &(card_write_keys[0x10].type))) {
 			error = 1;
 			goto error;
 		    }
 		    /* fallthrough */
-		case CLASSIC_1K:
+		case MIFARE_CLASSIC_1K:
 		    if (!search_sector_key (tags[i], 0x00, &(card_write_keys[0x00].key), &(card_write_keys[0x00].type))) {
 			error = 1;
 			goto error;
@@ -279,7 +277,7 @@ main(int argc, char *argv[])
 		if (!error) {
 		    /* Ensure the auth key is always a B one. If not, change it! */
 		    switch (freefare_get_tag_type (tags[i])) {
-		    case CLASSIC_4K:
+		    case MIFARE_CLASSIC_4K:
 			if (card_write_keys[0x10].type != MFC_KEY_B) {
 			    if( 0 != fix_mad_trailer_block (device, tags[i], 0x10, card_write_keys[0x10].key, card_write_keys[0x10].type)) {
 				error = 1;
@@ -289,7 +287,7 @@ main(int argc, char *argv[])
 			    card_write_keys[0x10].type = MFC_KEY_B;
 			}
 			/* fallthrough */
-		    case CLASSIC_1K:
+		    case MIFARE_CLASSIC_1K:
 			if (card_write_keys[0x00].type != MFC_KEY_B) {
 			    if( 0 != fix_mad_trailer_block (device, tags[i], 0x00, card_write_keys[0x00].key, card_write_keys[0x00].type)) {
 				error = 1;
@@ -338,18 +336,18 @@ main(int argc, char *argv[])
 		} else {
 
 		    // Create a MAD and mark unaccessible sectors in the card
-		    if (!(mad = mad_new ((freefare_get_tag_type (tags[i]) == CLASSIC_4K) ? 2 : 1))) {
+		    if (!(mad = mad_new ((freefare_get_tag_type (tags[i]) == MIFARE_CLASSIC_4K) ? 2 : 1))) {
 			perror ("mad_new");
 			error = 1;
 			goto error;
 		    }
 
-		    MifareClassicSectorNumber max_s;
+		    MifareClassicSectorNumber max_s = 0;
 		    switch (freefare_get_tag_type (tags[i])) {
-		    case CLASSIC_1K:
+		    case MIFARE_CLASSIC_1K:
 			max_s = 15;
 			break;
-		    case CLASSIC_4K:
+		    case MIFARE_CLASSIC_4K:
 			max_s = 39;
 			break;
 		    default:

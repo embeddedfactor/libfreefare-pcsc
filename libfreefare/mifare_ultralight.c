@@ -13,8 +13,6 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * 
- * $Id$
  */
 
 /*
@@ -189,7 +187,7 @@ do { \
 /*
  * Allocates and initialize a MIFARE UltraLight tag.
  */
-MifareTag
+FreefareTag
 mifare_ultralight_tag_new (void)
 {
     return (MifareTag)malloc (sizeof (struct mifare_ultralight_tag));
@@ -199,7 +197,7 @@ mifare_ultralight_tag_new (void)
  * Free the provided tag.
  */
 void
-mifare_ultralight_tag_free (MifareTag tag)
+mifare_ultralight_tag_free (FreefareTag tag)
 {
     free (tag);
 }
@@ -218,7 +216,7 @@ mifare_ultralight_tag_free (MifareTag tag)
  * Establish connection to the provided tag.
  */
 int
-mifare_ultralight_connect (MifareTag tag)
+mifare_ultralight_connect (FreefareTag tag)
 {
     int i;
     ASSERT_INACTIVE (tag);
@@ -230,37 +228,36 @@ mifare_ultralight_connect (MifareTag tag)
 #ifdef USE_PCSC
     { /* pcsc branch */
 
-	DWORD dwActiveProtocol;
+        DWORD dwActiveProtocol;
 
-	tag->lastPCSCerror = SCardConnect(tag->hContext, tag->szReader, SCARD_SHARE_SHARED, SCARD_PROTOCOL_T0, &(tag->hCard), &dwActiveProtocol);
-        if(SCARD_S_SUCCESS != tag->lastPCSCerror){
-	    return errno = EIO, -1;
-	}
+        tag->lastPCSCerror = SCardConnect(tag->hContext, tag->szReader, SCARD_SHARE_SHARED, SCARD_PROTOCOL_T0, &(tag->hCard), &dwActiveProtocol);
+        if(SCARD_S_SUCCESS != tag->lastPCSCerror) {
+            return errno = EIO, -1;
+        }
 	
-	tag->active = 1;
-	for (i = 0; i < MIFARE_ULTRALIGHT_MAX_PAGE_COUNT; i++)
-	    MIFARE_ULTRALIGHT(tag)->cached_pages[i] = 0;
-
-    } 
+        tag->active = 1;
+        for (i = 0; i < MIFARE_ULTRALIGHT_MAX_PAGE_COUNT; i++)
+            MIFARE_ULTRALIGHT(tag)->cached_pages[i] = 0;
+    }
 #endif
 #if defined(USE_LIBNFC) && defined(USE_PCSC)
     else 
 #endif
 #ifdef HAAVE_LIBNFC
     { /* nfc branch */
-    	nfc_target pnti;
-    	nfc_modulation modulation = {
-	    .nmt = NMT_ISO14443A,
-	    .nbr = NBR_106
-    	};
-    	if (nfc_initiator_select_passive_target (tag->device, modulation, tag->info.abtUid, tag->info.szUidLen, &pnti) >= 0) {
-	    tag->active = 1;
-	    for (i = 0; i < MIFARE_ULTRALIGHT_MAX_PAGE_COUNT; i++)
-	    	MIFARE_ULTRALIGHT(tag)->cached_pages[i] = 0;
-    	} else {
-	    errno = EIO;
-	    return -1;
-    	}
+        nfc_target pnti;
+        nfc_modulation modulation = {
+            .nmt = NMT_ISO14443A,
+            .nbr = NBR_106
+    	  };
+        if (nfc_initiator_select_passive_target (tag->device, modulation, tag->info.nti.nai.abtUid, tag->info.nti.nai.szUidLen, &pnti) >= 0) {
+            tag->active = 1;
+            for (i = 0; i < MIFARE_ULTRALIGHT_MAX_PAGE_COUNT; i++)
+                MIFARE_ULTRALIGHT(tag)->cached_pages[i] = 0;
+        } else {
+	          errno = EIO;
+            return -1;
+    	  }
     
     }
 #endif
@@ -271,7 +268,7 @@ mifare_ultralight_connect (MifareTag tag)
  * Terminate connection with the provided tag.
  */
 int
-mifare_ultralight_disconnect (MifareTag tag)
+mifare_ultralight_disconnect (FreefareTag tag)
 {
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_ULTRALIGHT (tag);
@@ -324,10 +321,10 @@ mifare_ultralight_disconnect (MifareTag tag)
  * Read data from the provided MIFARE tag.
  */
 int
-mifare_ultralight_read (MifareTag tag, const MifareUltralightPageNumber page, MifareUltralightPage *data)
+mifare_ultralight_read (FreefareTag tag, MifareUltralightPageNumber page, MifareUltralightPage *data)
 {
     int i;
-	int iPageCount;
+    int iPageCount;
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_ULTRALIGHT (tag);
     ASSERT_VALID_PAGE (tag, page, false);
@@ -366,7 +363,7 @@ mifare_ultralight_read (MifareTag tag, const MifareUltralightPageNumber page, Mi
  * Read data to the provided MIFARE tag.
  */
 int
-mifare_ultralight_write (MifareTag tag, const MifareUltralightPageNumber page, const MifareUltralightPage data)
+mifare_ultralight_write (FreefareTag tag, const MifareUltralightPageNumber page, const MifareUltralightPage data)
 {
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_ULTRALIGHT (tag);
@@ -393,7 +390,7 @@ mifare_ultralight_write (MifareTag tag, const MifareUltralightPageNumber page, c
  * Authenticate to the provided MIFARE tag.
  */
 int
-mifare_ultralightc_authenticate (MifareTag tag, const MifareDESFireKey key)
+mifare_ultralightc_authenticate (FreefareTag tag, const MifareDESFireKey key)
 {
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_ULTRALIGHT_C (tag);

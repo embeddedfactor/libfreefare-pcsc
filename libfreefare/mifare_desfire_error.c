@@ -13,8 +13,6 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * 
- * $Id$
  */
 #include "config.h"
 
@@ -77,18 +75,18 @@ mifare_desfire_error_lookup (uint8_t code)
 }
 
 uint8_t
-mifare_desfire_last_pcd_error (MifareTag tag)
+mifare_desfire_last_pcd_error (FreefareTag tag)
 {
-    if (tag->tag_info->type != DESFIRE)
+    if (tag->tag_info->type != MIFARE_DESFIRE)
 	return 0;
 
     return MIFARE_DESFIRE (tag)->last_pcd_error;
 }
 
 uint8_t
-mifare_desfire_last_picc_error (MifareTag tag)
+mifare_desfire_last_picc_error (FreefareTag tag)
 {
-    if (tag->tag_info->type != DESFIRE)
+    if (tag->tag_info->type != MIFARE_DESFIRE)
 	return 0;
 
     return MIFARE_DESFIRE (tag)->last_picc_error;

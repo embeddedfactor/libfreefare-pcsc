@@ -17,8 +17,6 @@
 " LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
 " OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 " SUCH DAMAGE.
-"
-" $Id$
 
 " Additionnal snippets for working with libfreefare in vim with the
 " snippetsEmu script:
@@ -54,7 +52,7 @@ exec "Snippet MD   MIFARE_DESFIRE".st.et
 exec "Snippet MDA  MifareDESFireAID".st.et
 exec "Snippet MDK  MifareDESFireKey".st.et
 
-exec "Snippet MT  MifareTag".st.et
+exec "Snippet MT  FreefareTag".st.et
 
 exec "Snippet MU   MIFARE_ULTRALIGHT".st.et
 exec "Snippet MUP  MifareUltralightPage".st.et

@@ -13,8 +13,6 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- * $Id$
  */
 
 /*
@@ -218,7 +216,7 @@ mifare_application_find (Mad mad, MadAid aid)
 }
 
 ssize_t
-mifare_application_read (MifareTag tag, Mad mad, const MadAid aid, void *buf, size_t nbytes, const MifareClassicKey key, const MifareClassicKeyType key_type)
+mifare_application_read (FreefareTag tag, Mad mad, const MadAid aid, void *buf, size_t nbytes, const MifareClassicKey key, const MifareClassicKeyType key_type)
 {
     ssize_t res = 0;
 
@@ -263,7 +261,7 @@ mifare_application_read (MifareTag tag, Mad mad, const MadAid aid, void *buf, si
 }
 
 ssize_t
-mifare_application_write (MifareTag tag, Mad mad, const MadAid aid, const void *buf, size_t nbytes, const MifareClassicKey key, const MifareClassicKeyType key_type)
+mifare_application_write (FreefareTag tag, Mad mad, const MadAid aid, const void *buf, size_t nbytes, const MifareClassicKey key, const MifareClassicKeyType key_type)
 {
     ssize_t res = 0;
 

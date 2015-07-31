@@ -13,8 +13,6 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * 
- * $Id $
  */
 
 /*
@@ -67,7 +65,7 @@ main(int argc, char *argv[])
 {
     int error = 0;
     nfc_device *device = NULL;
-    MifareTag *tags = NULL;
+    FreefareTag *tags = NULL;
     Mad mad;
 
     int ch;
@@ -141,8 +139,8 @@ main(int argc, char *argv[])
 
 	for (int i = 0; (!error) && tags[i]; i++) {
 	    switch (freefare_get_tag_type (tags[i])) {
-	    case CLASSIC_1K:
-	    case CLASSIC_4K:
+	    case MIFARE_CLASSIC_1K:
+	    case MIFARE_CLASSIC_4K:
 		break;
 	    default:
 		continue;
@@ -241,7 +239,7 @@ error:
 	freefare_free_tags (tags);
 	nfc_close (device);
     }
-  
+
     nfc_exit (context);
     exit (error);
 }

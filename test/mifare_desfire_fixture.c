@@ -14,8 +14,6 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * 
- * $Id$
  */
 
 #include <cutter.h>
@@ -25,8 +23,8 @@
 
 static nfc_context *context;
 static nfc_device *device = NULL;
-static MifareTag *tags = NULL;
-MifareTag tag = NULL;
+static FreefareTag *tags = NULL;
+FreefareTag tag = NULL;
 
 void
 cut_setup (void)
@@ -34,7 +32,7 @@ cut_setup (void)
   int res;
   nfc_connstring devices[8];
   size_t device_count;
-  
+
   nfc_init (&context);
   cut_assert_not_null (context, cut_message ("Unable to init libnfc (malloc)"));
 
@@ -45,7 +43,7 @@ cut_setup (void)
   for (size_t i = 0; i < device_count; i++) {
 
     device = nfc_open (context, devices[i]);
-    if (!device) 
+    if (!device)
       cut_omit ("nfc_open() failed.");
 
     tags = freefare_get_tags (device);
@@ -53,7 +51,7 @@ cut_setup (void)
 
     tag = NULL;
     for (int i=0; tags[i]; i++) {
-      if (freefare_get_tag_type(tags[i]) == DESFIRE) {
+      if (freefare_get_tag_type(tags[i]) == MIFARE_DESFIRE) {
         tag = tags[i];
         res = mifare_desfire_connect (tag);
         cut_assert_equal_int (0, res, cut_message ("mifare_desfire_connect() failed"));
@@ -90,7 +88,7 @@ cut_teardown (void)
 
   if (device)
       nfc_close (device);
-  
+
   nfc_exit (context);
 }
 

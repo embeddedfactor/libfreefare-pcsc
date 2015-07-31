@@ -13,8 +13,6 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- * $Id$
  */
 
 #include "config.h"
@@ -68,7 +66,7 @@ main(int argc, char *argv[])
     int ch;
     int error = EXIT_SUCCESS;
     nfc_device *device = NULL;
-    MifareTag *tags = NULL;
+    FreefareTag *tags = NULL;
 
     char *ndef_output = NULL;
     while ((ch = getopt (argc, argv, "hyo:k:")) != -1) {
@@ -123,7 +121,7 @@ main(int argc, char *argv[])
 
     nfc_connstring devices[8];
     size_t device_count;
-    
+
     nfc_context *context;
     nfc_init (&context);
     if (context == NULL)
@@ -135,7 +133,7 @@ main(int argc, char *argv[])
 
     for (size_t d = 0; d < device_count; d++) {
         device = nfc_open (context, devices[d]);
-        
+
         if (!device) {
             warnx ("nfc_open() failed.");
             error = EXIT_FAILURE;
@@ -149,7 +147,7 @@ main(int argc, char *argv[])
 	}
 
 	for (int i = 0; (!error) && tags[i]; i++) {
-	    if (DESFIRE != freefare_get_tag_type (tags[i]))
+	    if (MIFARE_DESFIRE != freefare_get_tag_type (tags[i]))
 		continue;
 
 	    char *tag_uid = freefare_get_tag_uid (tags[i]);

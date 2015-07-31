@@ -1,6 +1,5 @@
-# $Id$
-
-AM_CFLAGS = -I. -I$(top_srcdir)/libfreefare 
+AM_CFLAGS = -I. -I$(top_srcdir)/libfreefare @LIBNFC_CFLAGS@
+AM_LDFLAGS = @LIBNFC_LIBS@
 LDADD = $(top_builddir)/libfreefare/libfreefare.la
 if HAVE_LIBNFC
 AM_CFLAGS += @LIBNFC_CFLAGS@
@@ -13,8 +12,9 @@ endif
 
 bin_PROGRAMS =
 if HAVE_LIBNFC
-bin_PROGRAMS += \
-				 mifare-classic-format \
+bin_PROGRAMS += felica-lite-dump \
+	       felica-read-ndef \
+	       mifare-classic-format \
 	       mifare-classic-write-ndef \
 	       mifare-classic-read-ndef \
 	       mifare-desfire-access \
@@ -47,6 +47,12 @@ bin_PROGRAMS += \
 endif
 
 if HAVE_LIBNFC
+felica_lite_dump_SOURCES = felica-lite-dump.c
+felica_lite_dump_LDADD = $(top_builddir)/libfreefare/libfreefare.la
+
+felica_read_ndef_SOURCES = felica-read-ndef.c
+felica_read_ndef_LDADD = $(top_builddir)/libfreefare/libfreefare.la
+
 mifare_classic_format_SOURCES = mifare-classic-format.c
 mifare_classic_read_ndef_SOURCES = mifare-classic-read-ndef.c
 mifare_classic_write_ndef_SOURCES = mifare-classic-write-ndef.c

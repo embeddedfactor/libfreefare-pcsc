@@ -1,5 +1,5 @@
 /*-
- * Copyright (C) 2011 Glenn Ergeerts.
+ * Copyright (C) 2015, Romain Tartiere.
  * 
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the
@@ -15,24 +15,4 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-#ifndef __ERR_H__
-#define __ERR_H__
-
-#include <stdlib.h>
-
-#define warnx(...) do { \
-	fprintf (stderr, __VA_ARGS__); \
-	fprintf (stderr, "\n"); \
-} while (0)
-
-#define errx(code, ...) do { \
-	fprintf (stderr, __VA_ARGS__); \
-	fprintf (stderr, "\n"); \
-	exit (code); \
-} while (0)
-
-/* FIXME: warn / err are supposed to display errno's message */
-#define warn  warnx
-#define err   errx
-
-#endif /* !__ERR_H__ */
+extern FreefareTag tag;

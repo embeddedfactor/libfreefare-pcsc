@@ -13,8 +13,6 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * 
- * $Id$
  */
 
 #ifndef _MIFARE_DESFIRE_AUTO_AUTHENTICATE_H
@@ -27,6 +25,6 @@ extern uint8_t key_data_aes[16];
 extern uint8_t key_data_3k3des[24];
 extern const uint8_t key_data_aes_version;
 
-void		 mifare_desfire_auto_authenticate (MifareTag tag, uint8_t key_no);
+void		 mifare_desfire_auto_authenticate (FreefareTag tag, uint8_t key_no);
 
 #endif
