@@ -158,8 +158,8 @@ freefare_tag_new_pcsc (struct pcsc_context *context, const char *reader)
     SCARD_IO_REQUEST sendpci;
     /* SCARD_IO_REQUEST ioreq; // TODO: Unused?? */
 
-    err = SCardConnect(context->context, reader, SCARD_SHARE_SHARED, 
-			SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1, &hCard, &dwActiveProtocol);
+    err = SCardConnect(context->context, reader, SCARD_SHARE_SHARED,
+			SCARD_PROTOCOL_T1, &hCard, &dwActiveProtocol);
     if(err)
 	return NULL;
 
@@ -187,7 +187,7 @@ freefare_tag_new_pcsc (struct pcsc_context *context, const char *reader)
 
     found = false;
     for (k = 0; pcsc_supported_atrs[k].len != 0; k++){
-	if (atrlen != pcsc_supported_atrs[k].len) { 
+	if (atrlen != pcsc_supported_atrs[k].len) {
 	    continue;
 	}
 	if ( pcsc_supported_atrs[k].mask == NULL ){
@@ -211,8 +211,8 @@ freefare_tag_new_pcsc (struct pcsc_context *context, const char *reader)
 		break;
 	    }
 	}
-    }	
-    if (!found) { 
+    }
+    if (!found) {
 	return NULL;
     }
 
@@ -370,7 +370,7 @@ freefare_get_tags (nfc_device *device)
 /*
  * Get a list of the MIFARE targets near to the provided NFC initiator.
  * (Usally its just one tag, because pcsc can not detect more)
- * phContext must be established with SCardEstablishContext before 
+ * phContext must be established with SCardEstablishContext before
  * calling this function.
  * mszReader is the Name of the SmartCard Reader to use
  * The list has to be freed using the freefare_free_tags() function.
@@ -379,7 +379,7 @@ FreefareTag *
 freefare_get_tags_pcsc (struct pcsc_context *context, const char *reader)
 {
     FreefareTag *tags = NULL;
-    
+
     tags = (FreefareTag *)malloc(2*sizeof (FreefareTag));
     if(!tags)
     {

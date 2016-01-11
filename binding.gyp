@@ -10,6 +10,7 @@
       "product_prefix": "lib",
       "type": "static_library",
       "include_dirs": [
+        "<(node_root_dir)/deps/openssl/openssl/include",
         "<(freefare_src)",
         "contrib/<(OS)/<(ARCH)",
       ],
