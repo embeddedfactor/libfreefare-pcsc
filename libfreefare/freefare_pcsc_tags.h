@@ -24,20 +24,5 @@ struct pcsc_atr_info pcsc_supported_atrs[] = {
 	{ MIFARE_DESFIRE     , 0 , NULL, NULL}
 };
 
-#ifndef USE_LIBNFC
-// From https://github.com/nfc-tools/libnfc/blob/master/include/nfc/nfc-types.h#L295
-// Only if libnfc cannot provide these symbols
-typedef enum {
-  NMT_ISO14443A = 1,
-  NMT_JEWEL,
-  NMT_ISO14443B,
-  NMT_ISO14443BI, // pre-ISO14443B aka ISO/IEC 14443 B' or Type B'
-  NMT_ISO14443B2SR, // ISO14443-2B ST SRx
-  NMT_ISO14443B2CT, // ISO14443-2B ASK CTx
-  NMT_FELICA,
-  NMT_DEP,
-} nfc_modulation_type;
-#endif
-
 #endif /* __FREEFARE_PCSC_TAGS_H__ */
 

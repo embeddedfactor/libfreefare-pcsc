@@ -199,6 +199,21 @@ struct supported_tag {
 #endif
 };
 
+#ifndef USE_LIBNFC
+// From https://github.com/nfc-tools/libnfc/blob/master/include/nfc/nfc-types.h#L295
+// Only if libnfc cannot provide these symbols
+typedef enum {
+  NMT_ISO14443A = 1,
+  NMT_JEWEL,
+  NMT_ISO14443B,
+  NMT_ISO14443BI, // pre-ISO14443B aka ISO/IEC 14443 B' or Type B'
+  NMT_ISO14443B2SR, // ISO14443-2B ST SRx
+  NMT_ISO14443B2CT, // ISO14443-2B ASK CTx
+  NMT_FELICA,
+  NMT_DEP,
+} nfc_modulation_type;
+#endif
+
 /*
  * This structure is common to all supported MIFARE targets but shall not be
  * used directly (it's some kind of abstract class).  All members in this
@@ -213,22 +228,15 @@ struct freefare_tag {
     nfc_target info;
 #endif
     // PCSC things
+
+
 #ifdef USE_PCSC
 #ifndef USE_LIBNFC
     struct {
         struct {
             // From https://github.com/nfc-tools/libnfc/blob/master/include/nfc/nfc-types.h#L295
             // Only if libnfc cannot provide these symbols
-            enum {
-                NMT_ISO14443A = 1,
-                NMT_JEWEL,
-                NMT_ISO14443B,
-                NMT_ISO14443BI, // pre-ISO14443B aka ISO/IEC 14443 B' or Type B'
-                NMT_ISO14443B2SR, // ISO14443-2B ST SRx
-                NMT_ISO14443B2CT, // ISO14443-2B ASK CTx
-                NMT_FELICA,
-                NMT_DEP,
-            } nmt;
+            nfc_modulation_type nmt;
         } nm;
         struct {
             struct {
