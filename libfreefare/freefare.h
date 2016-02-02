@@ -43,7 +43,7 @@ enum freefare_tag_type {
 //    MIFARE_PLUS_X2K,
 //    MIFARE_PLUS_X4K,
     MIFARE_ULTRALIGHT,
-    MIFARE_ULTRALIGHT_C,
+    MIFARE_ULTRALIGHT_C
 };
 
 struct freefare_tag;
