@@ -1,11 +1,11 @@
 /*-
  * Copyright (C) 2009, 2010, Romain Tartiere, Romuald Conty.
- * 
+ *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the
  * Free Software Foundation, either version 3 of the License, or (at your
  * option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
@@ -61,7 +61,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
+//#include <strings.h>
 
 #ifdef WITH_DEBUG
 #  include <libutil.h>
@@ -323,7 +323,7 @@ mifare_classic_connect (FreefareTag tag)
 #ifdef USE_PCSC
     {
         DWORD dwActiveProtocol;
-        tag->lastPCSCerror = SCardConnect(tag->hContext, tag->szReader, SCARD_SHARE_SHARED, 
+        tag->lastPCSCerror = SCardConnect(tag->hContext, tag->szReader, SCARD_SHARE_SHARED,
                                            SCARD_PROTOCOL_T0, &(tag->hCard), &dwActiveProtocol);
         if(SCARD_S_SUCCESS != tag->lastPCSCerror) {
             errno = EIO;
@@ -364,7 +364,7 @@ mifare_classic_disconnect (FreefareTag tag)
 #ifdef USE_PCSC
     {
 	tag->lastPCSCerror = SCardDisconnect(tag->hCard, SCARD_LEAVE_CARD);
-	if(SCARD_S_SUCCESS == tag->lastPCSCerror) 
+	if(SCARD_S_SUCCESS == tag->lastPCSCerror)
 	{
 	    tag->active = 0;
 	}
@@ -808,7 +808,7 @@ mifare_classic_format_sector (FreefareTag tag, const MifareClassicSectorNumber s
     MifareClassicBlockNumber first_sector_block = mifare_classic_sector_first_block (sector);
     MifareClassicBlockNumber last_sector_block = mifare_classic_sector_last_block (sector);
 
-    /* 
+    /*
      * Check that the current key allow us to rewrite data and trailer blocks.
      */
 

@@ -1,11 +1,11 @@
 /*-
  * Copyright (C) 2010, Romain Tartiere, Romuald Conty.
- * 
+ *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the
  * Free Software Foundation, either version 3 of the License, or (at your
  * option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
@@ -54,7 +54,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
+//#include <strings.h>
 
 #ifdef WITH_DEBUG
 #  include <libutil.h>
@@ -414,8 +414,8 @@ mifare_desfire_connect (FreefareTag tag)
 #ifdef USE_PCSC
     {
 	DWORD	dwActiveProtocol;
-	
-	tag->lastPCSCerror = SCardConnect(tag->hContext, tag->szReader, SCARD_SHARE_SHARED, 
+
+	tag->lastPCSCerror = SCardConnect(tag->hContext, tag->szReader, SCARD_SHARE_SHARED,
 						SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1, &(tag->hCard), &dwActiveProtocol);
 	if(SCARD_S_SUCCESS != tag->lastPCSCerror)
 	{
@@ -432,14 +432,14 @@ mifare_desfire_connect (FreefareTag tag)
 	}
     }
 #endif
- 
+
     tag->active = 1;
     free (MIFARE_DESFIRE (tag)->session_key);
     MIFARE_DESFIRE (tag)->session_key = NULL;
     MIFARE_DESFIRE (tag)->last_picc_error = OPERATION_OK;
     MIFARE_DESFIRE (tag)->last_pcd_error = OPERATION_OK;
     MIFARE_DESFIRE (tag)->authenticated_key_no = NOT_YET_AUTHENTICATED;
-    MIFARE_DESFIRE (tag)->selected_application = 0;	
+    MIFARE_DESFIRE (tag)->selected_application = 0;
 
     return 0;
 }
@@ -455,7 +455,7 @@ mifare_desfire_disconnect (FreefareTag tag)
 
     free (MIFARE_DESFIRE (tag)->session_key);
     MIFARE_DESFIRE(tag)->session_key = NULL;
-    
+
 #if defined(USE_LIBNFC) && defined(USE_PCSC)
     if(NULL != tag->device) // nfclib way
 #endif
@@ -472,14 +472,14 @@ mifare_desfire_disconnect (FreefareTag tag)
 #ifdef USE_PCSC
     {
 	tag->lastPCSCerror = SCardDisconnect(tag->hCard, SCARD_LEAVE_CARD);
-	if(SCARD_S_SUCCESS == tag->lastPCSCerror) 
+	if(SCARD_S_SUCCESS == tag->lastPCSCerror)
 	{
 	    tag->active = 0;
 	}
     }
 #endif
 
-    
+
 
     return 0;
 }
@@ -1614,7 +1614,7 @@ create_file1 (FreefareTag tag, uint8_t command, uint8_t file_no, int has_iso_fil
     p = (char *)mifare_cryto_postprocess_data (tag, res, &sn, MDCM_PLAIN | CMAC_COMMAND | CMAC_VERIFY);
 
     if (!p) {
-	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */; 
+	result = errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */;
     } else {
 
     cached_file_settings_current[file_no] = false;
