@@ -126,9 +126,6 @@
 /* Version number of package */
 #define VERSION "0.3.5"
 
-/* Define on BSD to activate all library features */
-#define _BSD_SOURCE 1
-
 /* Define for Solaris 2.5.1 so the uint32_t typedef from <sys/synch.h>,
    <pthread.h>, or <semaphore.h> is not used. If the typedef were allowed, the
    #define below would cause a syntax error. */
