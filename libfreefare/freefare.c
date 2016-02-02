@@ -459,11 +459,11 @@ freefare_free_tag (FreefareTag tag)
 {
     if (tag) {
         switch (tag->tag_info->type) {
-#ifdef USE_LIBNFC
         case FELICA:
+#ifdef USE_LIBNFC
             felica_tag_free (tag);
-            break;
 #endif
+            break;
         case MIFARE_CLASSIC_1K:
         case MIFARE_CLASSIC_4K:
             mifare_classic_tag_free (tag);
