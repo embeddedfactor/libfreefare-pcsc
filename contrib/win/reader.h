@@ -94,7 +94,7 @@
 /**
  * Provide source compatibility on different platforms
  */
-#if not defined(SCARD_CTL_CODE)
+#ifndef SCARD_CTL_CODE
 #define SCARD_CTL_CODE(code) (0x42000000 + (code))
 #endif
 /**
