@@ -340,7 +340,7 @@ FreefareTag
 mifare_desfire_tag_new (void)
 {
     FreefareTag tag;
-    if ((tag= malloc (sizeof (struct mifare_desfire_tag)))) {
+    if ((tag = (FreefareTag)malloc (sizeof (struct mifare_desfire_tag)))) {
 	MIFARE_DESFIRE (tag)->last_picc_error = OPERATION_OK;
 	MIFARE_DESFIRE (tag)->last_pcd_error = OPERATION_OK;
 	MIFARE_DESFIRE (tag)->session_key = NULL;
@@ -1866,7 +1866,7 @@ read_data (FreefareTag tag, uint8_t command, uint8_t file_no, off_t offset, size
      * through the cryptography code and copy the actual data to the
      * destination buffer.
      */
-    uint8_t *read_buffer = malloc (enciphered_data_length (tag, length * record_size, 0) + 1);
+    uint8_t *read_buffer = (uint8_t *)malloc (enciphered_data_length (tag, length * record_size, 0) + 1);
 
     do {
 	DESFIRE_TRANSCEIVE2 (tag, p, __cmd_n, res);
@@ -1882,7 +1882,7 @@ read_data (FreefareTag tag, uint8_t command, uint8_t file_no, off_t offset, size
     ((uint8_t *)read_buffer)[bytes_received++] = 0x00;
 
     ssize_t sr = bytes_received;
-    p = mifare_cryto_postprocess_data (tag, read_buffer, &sr, cs | CMAC_COMMAND | CMAC_VERIFY | MAC_VERIFY);
+    p = (uint8_t *)mifare_cryto_postprocess_data (tag, read_buffer, &sr, cs | CMAC_COMMAND | CMAC_VERIFY | MAC_VERIFY);
 
     if (sr > 0)
 	memcpy(data, read_buffer, sr - 1);

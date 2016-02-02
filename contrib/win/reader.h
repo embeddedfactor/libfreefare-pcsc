@@ -94,8 +94,9 @@
 /**
  * Provide source compatibility on different platforms
  */
+#if not defined(SCARD_CTL_CODE)
 #define SCARD_CTL_CODE(code) (0x42000000 + (code))
-
+#endif
 /**
  * PC/SC part 10 v2.02.07 March 2010 reader tags
  */

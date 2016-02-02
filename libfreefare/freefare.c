@@ -421,12 +421,12 @@ freefare_get_tag_uid (FreefareTag tag)
     char *res = NULL;
     switch (tag->info.nm.nmt) {
         case NMT_FELICA:
-            if ((res = malloc (17))) {
+            if ((res = (char *)malloc (17))) {
                 for (i = 0; i < 8; i++)
                     snprintf (res + 2*i, 3, "%02x", tag->info.nti.nfi.abtId[i]);
             } break;
         case NMT_ISO14443A:
-            if ((res = malloc (2 * tag->info.nti.nai.szUidLen + 1))) {
+            if ((res = (char *)malloc (2 * tag->info.nti.nai.szUidLen + 1))) {
                 for (i = 0; i < tag->info.nti.nai.szUidLen; i++)
                     snprintf (res + 2*i, 3, "%02x", tag->info.nti.nai.abtUid[i]);
             } break;
