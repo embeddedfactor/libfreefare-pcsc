@@ -18,7 +18,7 @@
 #include <cutter.h>
 #include <errno.h>
 #include <string.h>
-#include <strings.h>
+//#include <strings.h>
 
 #include <freefare.h>
 #include "freefare_internal.h"
