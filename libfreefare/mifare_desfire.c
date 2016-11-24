@@ -415,7 +415,7 @@ mifare_desfire_connect (FreefareTag tag)
     {
 	DWORD	dwActiveProtocol;
 
-	tag->lastPCSCerror = SCardConnect(tag->hContext, tag->szReader, SCARD_SHARE_SHARED,
+	tag->lastPCSCerror = SCardConnect(tag->hContext, tag->szReader, SCARD_SHARE_EXCLUSIVE,
 						SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1, &(tag->hCard), &dwActiveProtocol);
 	if(SCARD_S_SUCCESS != tag->lastPCSCerror)
 	{
