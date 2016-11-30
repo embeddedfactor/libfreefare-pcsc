@@ -74,6 +74,7 @@ void		 freefare_free_tags (FreefareTag *tags);
 bool		 freefare_selected_tag_is_present(nfc_device *device);
 #endif // HAVE_LIBFC
 
+int freefare_internal_error(FreefareTag tag);
 const char	*freefare_strerror (FreefareTag tag);
 int		 freefare_strerror_r (FreefareTag tag, char *buffer, size_t len);
 void		 freefare_perror (FreefareTag tag, const char *string);
