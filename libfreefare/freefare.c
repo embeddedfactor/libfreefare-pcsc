@@ -531,7 +531,7 @@ freefare_strerror (FreefareTag tag)
     return p;
 }
 
-int freefare_internal_error(FreefareTag tag) {
+unsigned int freefare_internal_error(FreefareTag tag) {
 #if defined(USE_LIBNFC) && defined(USE_PCSC)
     if(tag->device != NULL) // we use libnfc
 #endif
@@ -556,13 +556,13 @@ int freefare_internal_error(FreefareTag tag) {
 #ifdef USE_PCSC
     {
         if (tag->lastPCSCerror != 0){
-            return (int)tag->lastPCSCerror;
+            return (unsigned int)tag->lastPCSCerror;
         } else {
             if (tag->tag_info->type == MIFARE_DESFIRE) {
                 if (MIFARE_DESFIRE (tag)->last_pcd_error) {
-                    return (int)(MIFARE_DESFIRE (tag)->last_pcd_error);
+                    return (unsigned int)(MIFARE_DESFIRE (tag)->last_pcd_error);
                 } else if (MIFARE_DESFIRE (tag)->last_picc_error) {
-                    return (int)(MIFARE_DESFIRE (tag)->last_picc_error);
+                    return (unsigned int)(MIFARE_DESFIRE (tag)->last_picc_error);
                 }
             }
         }
