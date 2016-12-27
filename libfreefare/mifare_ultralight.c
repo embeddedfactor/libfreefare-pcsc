@@ -50,133 +50,132 @@
 
 #define ASSERT_VALID_PAGE(tag, page, mode_write) \
     do { \
-	if (IS_MIFARE_ULTRALIGHT_C(tag)) { \
-	    if (mode_write) { \
-		if (page >= MIFARE_ULTRALIGHT_C_PAGE_COUNT) return errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */; \
-	    } else { \
-		if (page >= MIFARE_ULTRALIGHT_C_PAGE_COUNT_READ) return errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */; \
-	    } \
-	} else { \
-	    if (page >= MIFARE_ULTRALIGHT_PAGE_COUNT) return errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */; \
-	} \
+  if (IS_MIFARE_ULTRALIGHT_C(tag)) { \
+      if (mode_write) { \
+    if (page >= MIFARE_ULTRALIGHT_C_PAGE_COUNT) return errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */; \
+      } else { \
+    if (page >= MIFARE_ULTRALIGHT_C_PAGE_COUNT_READ) return errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */; \
+      } \
+  } else { \
+      if (page >= MIFARE_ULTRALIGHT_PAGE_COUNT) return errno = EINVAL /*, -1 // TODO: Does the -1 contribute anyting? */; \
+  } \
     } while (0)
 
 #if defined(USE_LIBNFC) && defined(USE_PCSC)
 #define ULTRALIGHT_TRANSCEIVE(tag, msg, res) \
     do { \
-	int _res ; \
-	errno = 0; \
-	DEBUG_XFER (msg, __##msg##_n, "===> "); \
-	if (tag->device == NULL) \
+  int _res ; \
+  errno = 0; \
+  DEBUG_XFER (msg, __##msg##_n, "===> "); \
+  if (tag->device == NULL) \
   { \
-	/* PCSC branch */\
-	    SCARD_IO_REQUEST __pcsc_rcv_pci; \
-	    DWORD __pcsc_recv_len = __##res##_size; \
-	    if ((SCARD_S_SUCCESS != SCardTransmit(tag->hCard, SCARD_PCI_T0, msg, __##msg##_n, &__pcsc_rcv_pci, res, &__pcsc_recv_len)) < 0) { \
-		return errno = EIO, -1; \
-	    } \
-	_res = __pcsc_recv_len; \
-	} \
+  /* PCSC branch */\
+      SCARD_IO_REQUEST __pcsc_rcv_pci; \
+      DWORD __pcsc_recv_len = __##res##_size; \
+      if ((SCARD_S_SUCCESS != SCardTransmit(tag->hCard, SCARD_PCI_T0, msg, __##msg##_n, &__pcsc_rcv_pci, res, &__pcsc_recv_len)) < 0) { \
+    return errno = EIO, -1; \
+      } \
+  _res = __pcsc_recv_len; \
+  } \
   else \
   { \
-	/* nfc branch */ \
-	    if ((_res = nfc_initiator_transceive_bytes (tag->device, msg, __##msg##_n, res, __##res##_size, 0)) < 0) { \
-		return errno = EIO, -1; \
-	    } \
-	    __##res##_n = _res; \
-	    DEBUG_XFER (res, __##res##_n, "<=== "); \
-	} \
+  /* nfc branch */ \
+      if ((_res = nfc_initiator_transceive_bytes (tag->device, msg, __##msg##_n, res, __##res##_size, 0)) < 0) { \
+    return errno = EIO, -1; \
+      } \
+      __##res##_n = _res; \
+      DEBUG_XFER (res, __##res##_n, "<=== "); \
+  } \
     } while (0);
 
 #define ULTRALIGHT_TRANSCEIVE_RAW(tag, msg, res) \
 do { \
-	if (tag->device == NULL)\
+  if (tag->device == NULL)\
   {\
-		ULTRALIGHT_TRANSCEIVE(tag, msg, res); \
-	} \
+    ULTRALIGHT_TRANSCEIVE(tag, msg, res); \
+  } \
   else \
   { \
-	    int _res; \
-	    errno = 0; \
-	    if (nfc_device_set_property_bool (tag->device, NP_EASY_FRAMING, false) < 0) { \
-	    errno = EIO; \
-	    return -1; \
-	    } \
-	    DEBUG_XFER (msg, __##msg##_n, "===> "); \
-	    if ((_res = nfc_initiator_transceive_bytes (tag->device, msg, __##msg##_n, res, __##res##_size, 0)) < 0) { \
-		nfc_device_set_property_bool (tag->device, NP_EASY_FRAMING, true); \
-		return errno = EIO, -1; \
-	    } \
-	    __##res##_n = _res; \
-	    DEBUG_XFER (res, __##res##_n, "<=== "); \
-	    if (nfc_device_set_property_bool (tag->device, NP_EASY_FRAMING, true) < 0) { \
-		errno = EIO; \
-		return -1; \
-	    } \
-	} \
+      int _res; \
+      errno = 0; \
+      if (nfc_device_set_property_bool (tag->device, NP_EASY_FRAMING, false) < 0) { \
+      errno = EIO; \
+      return -1; \
+      } \
+      DEBUG_XFER (msg, __##msg##_n, "===> "); \
+      if ((_res = nfc_initiator_transceive_bytes (tag->device, msg, __##msg##_n, res, __##res##_size, 0)) < 0) { \
+    nfc_device_set_property_bool (tag->device, NP_EASY_FRAMING, true); \
+    return errno = EIO, -1; \
+      } \
+      __##res##_n = _res; \
+      DEBUG_XFER (res, __##res##_n, "<=== "); \
+      if (nfc_device_set_property_bool (tag->device, NP_EASY_FRAMING, true) < 0) { \
+    errno = EIO; \
+    return -1; \
+      } \
+  } \
 } while (0);
 
 #elif USE_LIBNFC
 #define ULTRALIGHT_TRANSCEIVE(tag, msg, res) \
     do { \
-	int _res ; \
-	errno = 0; \
-	DEBUG_XFER (msg, __##msg##_n, "===> "); \
-  { \
-	/* nfc branch */ \
-	    if ((_res = nfc_initiator_transceive_bytes (tag->device, msg, __##msg##_n, res, __##res##_size, 0)) < 0) { \
-		return errno = EIO, -1; \
-	    } \
-	    __##res##_n = _res; \
-	    DEBUG_XFER (res, __##res##_n, "<=== "); \
-	} \
+        int _res ; \
+        errno = 0; \
+        DEBUG_XFER (msg, __##msg##_n, "===> "); \
+        { \
+        /* nfc branch */ \
+            if ((_res = nfc_initiator_transceive_bytes (tag->device, msg, __##msg##_n, res, __##res##_size, 0)) < 0) { \
+                return errno = EIO, -1; \
+            } \
+            __##res##_n = _res; \
+            DEBUG_XFER (res, __##res##_n, "<=== "); \
+        } \
     } while (0)
 
 #define ULTRALIGHT_TRANSCEIVE_RAW(tag, msg, res) \
 do { \
-  { \
-	    int _res; \
-	    errno = 0; \
-	    if (nfc_device_set_property_bool (tag->device, NP_EASY_FRAMING, false) < 0) { \
-	    errno = EIO; \
-	    return -1; \
-	    } \
-	    DEBUG_XFER (msg, __##msg##_n, "===> "); \
-	    if ((_res = nfc_initiator_transceive_bytes (tag->device, msg, __##msg##_n, res, __##res##_size, 0)) < 0) { \
-		nfc_device_set_property_bool (tag->device, NP_EASY_FRAMING, true); \
-		return errno = EIO, -1; \
-	    } \
-	    __##res##_n = _res; \
-	    DEBUG_XFER (res, __##res##_n, "<=== "); \
-	    if (nfc_device_set_property_bool (tag->device, NP_EASY_FRAMING, true) < 0) { \
-		errno = EIO; \
-		return -1; \
-	    } \
-	} \
+    { \
+        int _res = 0; \
+        errno = 0; \
+        if (nfc_device_set_property_bool (tag->device, NP_EASY_FRAMING, false) < 0) { \
+            errno = EIO; \
+            return -1; \
+        } \
+        DEBUG_XFER (msg, __##msg##_n, "===> "); \
+        if ((_res = nfc_initiator_transceive_bytes (tag->device, msg, __##msg##_n, res, __##res##_size, 0)) < 0) { \
+            nfc_device_set_property_bool (tag->device, NP_EASY_FRAMING, true); \
+            return errno = EIO, -1; \
+        } \
+        __##res##_n = _res; \
+        DEBUG_XFER (res, __##res##_n, "<=== "); \
+        if (nfc_device_set_property_bool (tag->device, NP_EASY_FRAMING, true) < 0) { \
+            errno = EIO; \
+            return -1; \
+        } \
+    } \
 } while (0);
 
 #else
 #define ULTRALIGHT_TRANSCEIVE(tag, msg, res) \
     do { \
-	int _res ; \
-	errno = 0; \
-	DEBUG_XFER (msg, __##msg##_n, "===> "); \
-  { \
-	/* PCSC branch */\
-	    SCARD_IO_REQUEST __pcsc_rcv_pci; \
-	    DWORD __pcsc_recv_len = __##res##_size; \
-	    if ((SCARD_S_SUCCESS != SCardTransmit(tag->hCard, SCARD_PCI_T0, msg, __##msg##_n, &__pcsc_rcv_pci, res, &__pcsc_recv_len))) { \
-		return errno = EIO, -1; \
-	    } \
-	_res = __pcsc_recv_len; \
-	} \
+      errno = 0; \
+      DEBUG_XFER (msg, __##msg##_n, "===> "); \
+      { \
+      /* PCSC branch */\
+          SCARD_IO_REQUEST __pcsc_rcv_pci; \
+          DWORD __pcsc_recv_len = __##res##_size; \
+          if ((SCARD_S_SUCCESS != SCardTransmit(tag->hCard, SCARD_PCI_T0, msg, __##msg##_n, &__pcsc_rcv_pci, res, &__pcsc_recv_len))) { \
+              return errno = EIO, -1; \
+          } \
+          __##res##_n = __pcsc_recv_len; \
+      } \
     } while (0);
 
 #define ULTRALIGHT_TRANSCEIVE_RAW(tag, msg, res) \
 do { \
   {\
-		ULTRALIGHT_TRANSCEIVE(tag, msg, res); \
-	} \
+    ULTRALIGHT_TRANSCEIVE(tag, msg, res); \
+  } \
 } while (0);
 
 #endif
@@ -234,7 +233,7 @@ mifare_ultralight_connect (FreefareTag tag)
         if(SCARD_S_SUCCESS != tag->lastPCSCerror) {
             return errno = EIO, -1;
         }
-	
+  
         tag->active = 1;
         for (i = 0; i < MIFARE_ULTRALIGHT_MAX_PAGE_COUNT; i++)
             MIFARE_ULTRALIGHT(tag)->cached_pages[i] = 0;
@@ -249,15 +248,15 @@ mifare_ultralight_connect (FreefareTag tag)
         nfc_modulation modulation = {
             .nmt = NMT_ISO14443A,
             .nbr = NBR_106
-    	  };
+        };
         if (nfc_initiator_select_passive_target (tag->device, modulation, tag->info.nti.nai.abtUid, tag->info.nti.nai.szUidLen, &pnti) >= 0) {
             tag->active = 1;
             for (i = 0; i < MIFARE_ULTRALIGHT_MAX_PAGE_COUNT; i++)
                 MIFARE_ULTRALIGHT(tag)->cached_pages[i] = 0;
         } else {
-	          errno = EIO;
+            errno = EIO;
             return -1;
-    	  }
+        }
     
     }
 #endif
@@ -278,18 +277,18 @@ mifare_ultralight_disconnect (FreefareTag tag)
 #endif
 #ifdef USE_PCSC
     {
-	/* pcsc branch */
+  /* pcsc branch */
 
-	if ( (tag->lastPCSCerror = SCardDisconnect (tag->hCard, SCARD_LEAVE_CARD) ) == SCARD_S_SUCCESS ) 
-	{
-	    tag->active = 0;
-	    return 0;
-	} 
-	else 
-	{
-	    errno = EIO;
-	    return -1;	
-	}
+  if ( (tag->lastPCSCerror = SCardDisconnect (tag->hCard, SCARD_LEAVE_CARD) ) == SCARD_S_SUCCESS ) 
+  {
+      tag->active = 0;
+      return 0;
+  } 
+  else 
+  {
+      errno = EIO;
+      return -1;  
+  }
 
     } 
 #endif
@@ -298,12 +297,12 @@ mifare_ultralight_disconnect (FreefareTag tag)
 #endif
 #ifdef USE_LIBNFC
     { 
-    	if (nfc_initiator_deselect_target (tag->device) >= 0) {
-	    tag->active = 0;
-    	} else {
-	    errno = EIO;
-	    return -1;
-    	}
+      if (nfc_initiator_deselect_target (tag->device) >= 0) {
+      tag->active = 0;
+      } else {
+      errno = EIO;
+      return -1;
+      }
         return 0;
     }
 #endif
@@ -330,28 +329,28 @@ mifare_ultralight_read (FreefareTag tag, MifareUltralightPageNumber page, Mifare
     ASSERT_VALID_PAGE (tag, page, false);
 
     if (!MIFARE_ULTRALIGHT(tag)->cached_pages[page]) {
-	BUFFER_INIT (cmd, 2);
-	BUFFER_ALIAS (res, MIFARE_ULTRALIGHT(tag)->cache[page], sizeof(MifareUltralightPage) * 4);
+  BUFFER_INIT (cmd, 2);
+  BUFFER_ALIAS (res, MIFARE_ULTRALIGHT(tag)->cache[page], sizeof(MifareUltralightPage) * 4);
 
-	BUFFER_APPEND (cmd, 0x30);
-	BUFFER_APPEND (cmd, page);
+  BUFFER_APPEND (cmd, 0x30);
+  BUFFER_APPEND (cmd, page);
 
-	ULTRALIGHT_TRANSCEIVE (tag, cmd, res);
+  ULTRALIGHT_TRANSCEIVE (tag, cmd, res);
 
-	/* Handle wrapped pages */
-	if (IS_MIFARE_ULTRALIGHT_C(tag)) {
-	    iPageCount = MIFARE_ULTRALIGHT_C_PAGE_COUNT_READ;
-	} else {
-	    iPageCount = MIFARE_ULTRALIGHT_PAGE_COUNT;
-	}
-	for (i = iPageCount; i <= page + 3; i++) {
-	    memcpy (MIFARE_ULTRALIGHT(tag)->cache[i % iPageCount], MIFARE_ULTRALIGHT(tag)->cache[i], sizeof (MifareUltralightPage));
-	}
+  /* Handle wrapped pages */
+  if (IS_MIFARE_ULTRALIGHT_C(tag)) {
+      iPageCount = MIFARE_ULTRALIGHT_C_PAGE_COUNT_READ;
+  } else {
+      iPageCount = MIFARE_ULTRALIGHT_PAGE_COUNT;
+  }
+  for (i = iPageCount; i <= page + 3; i++) {
+      memcpy (MIFARE_ULTRALIGHT(tag)->cache[i % iPageCount], MIFARE_ULTRALIGHT(tag)->cache[i], sizeof (MifareUltralightPage));
+  }
 
-	/* Mark pages as cached */
-	for (i = page; i <= page + 3; i++) {
-	    MIFARE_ULTRALIGHT(tag)->cached_pages[i % iPageCount] = 1;
-	}
+  /* Mark pages as cached */
+  for (i = page; i <= page + 3; i++) {
+      MIFARE_ULTRALIGHT(tag)->cached_pages[i % iPageCount] = 1;
+  }
     BUFFER_FREE(cmd);
     }
 
@@ -424,8 +423,8 @@ mifare_ultralightc_authenticate (FreefareTag tag, const MifareDESFireKey key)
     size_t offset = 0;
 
     while (offset < 16) {
-	mifare_cypher_single_block (key, token + offset, ivect, MCD_SEND, MCO_ENCYPHER, 8);
-	offset += 8;
+  mifare_cypher_single_block (key, token + offset, ivect, MCD_SEND, MCO_ENCYPHER, 8);
+  offset += 8;
     }
 
     BUFFER_INIT (cmd2, 17);
@@ -450,8 +449,8 @@ mifare_ultralightc_authenticate (FreefareTag tag, const MifareDESFireKey key)
     BUFFER_FREE(cmd2);
     BUFFER_FREE(res);
     if (0 != memcmp (PCD_RndA_s, PICC_RndA_s, 8)) {
-	errno = EACCES;
-	return -1;
+  errno = EACCES;
+  return -1;
     }
     // XXX Should we store the state "authenticated" in the tag struct??
     return 0;
@@ -471,8 +470,8 @@ is_mifare_ultralightc_on_reader (nfc_device *device, nfc_iso14443a_info nai)
 
     nfc_target pnti;
     nfc_modulation modulation = {
-	.nmt = NMT_ISO14443A,
-	.nbr = NBR_106
+  .nmt = NMT_ISO14443A,
+  .nbr = NBR_106
     };
     nfc_initiator_select_passive_target (device, modulation, nai.abtUid, nai.szUidLen, &pnti);
     nfc_device_set_property_bool (device, NP_EASY_FRAMING, false);

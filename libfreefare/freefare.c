@@ -149,7 +149,7 @@ freefare_tag_new_pcsc (struct pcsc_context *context, const char *reader)
     unsigned int k;
     char crc = 0x00;
     size_t size;
-    FreefareTag tag;
+    FreefareTag tag = NULL;
     LONG err;
     DWORD atrlen = sizeof(pbAttr);
     DWORD dwActiveProtocol;

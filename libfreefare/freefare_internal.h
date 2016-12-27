@@ -115,22 +115,22 @@
 
 #define MAX_CRYPTO_BLOCK_SIZE 16
 
-void		*memdup (const void *p, const size_t n);
+void    *memdup (const void *p, const size_t n);
 
 struct mad_sector_0x00;
 struct mad_sector_0x10;
 
-void		 nxp_crc (uint8_t *crc, const uint8_t value);
-FreefareTag	 felica_tag_new (void);
-void		 felica_tag_free (FreefareTag tag);
-FreefareTag	 mifare_classic_tag_new (void);
-void		 mifare_classic_tag_free (FreefareTag tag);
-FreefareTag	 mifare_desfire_tag_new (void);
-void		 mifare_desfire_tag_free (FreefareTag tags);
-FreefareTag	 mifare_ultralight_tag_new (void);
-void		 mifare_ultralight_tag_free (FreefareTag tag);
-uint8_t		 sector_0x00_crc8 (Mad mad);
-uint8_t		 sector_0x10_crc8 (Mad mad);
+void     nxp_crc (uint8_t *crc, const uint8_t value);
+FreefareTag  felica_tag_new (void);
+void     felica_tag_free (FreefareTag tag);
+FreefareTag  mifare_classic_tag_new (void);
+void     mifare_classic_tag_free (FreefareTag tag);
+FreefareTag  mifare_desfire_tag_new (void);
+void     mifare_desfire_tag_free (FreefareTag tags);
+FreefareTag  mifare_ultralight_tag_new (void);
+void     mifare_ultralight_tag_free (FreefareTag tag);
+uint8_t    sector_0x00_crc8 (Mad mad);
+uint8_t    sector_0x10_crc8 (Mad mad);
 
 typedef enum {
     MCD_SEND,
@@ -162,21 +162,21 @@ typedef enum {
 #define MAC_MASK   0x0F0
 #define CMAC_MACK  0xF00
 
-void		*mifare_cryto_preprocess_data (FreefareTag tag, void *data, size_t *nbytes, off_t offset, int communication_settings);
-void		*mifare_cryto_postprocess_data (FreefareTag tag, void *data, ssize_t *nbytes, int communication_settings);
-void		 mifare_cypher_single_block (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareCryptoDirection direction, MifareCryptoOperation operation, size_t block_size);
-void		 mifare_cypher_blocks_chained (FreefareTag tag, MifareDESFireKey key, uint8_t *ivect, uint8_t *data, size_t data_size, MifareCryptoDirection direction, MifareCryptoOperation operation);
-void		 rol (uint8_t *data, const size_t len);
-void		 desfire_crc32 (const uint8_t *data, const size_t len, uint8_t *crc);
-void		 desfire_crc32_append (uint8_t *data, const size_t len);
-size_t		 key_block_size (const MifareDESFireKey key);
-size_t		 padded_data_length (const size_t nbytes, const size_t block_size);
-size_t		 maced_data_length (const MifareDESFireKey key, const size_t nbytes);
-size_t		 enciphered_data_length (const FreefareTag tag, const size_t nbytes, int communication_settings);
+void    *mifare_cryto_preprocess_data (FreefareTag tag, void *data, size_t *nbytes, off_t offset, int communication_settings);
+void    *mifare_cryto_postprocess_data (FreefareTag tag, void *data, ssize_t *nbytes, int communication_settings);
+void     mifare_cypher_single_block (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareCryptoDirection direction, MifareCryptoOperation operation, size_t block_size);
+void     mifare_cypher_blocks_chained (FreefareTag tag, MifareDESFireKey key, uint8_t *ivect, uint8_t *data, size_t data_size, MifareCryptoDirection direction, MifareCryptoOperation operation);
+void     rol (uint8_t *data, const size_t len);
+void     desfire_crc32 (const uint8_t *data, const size_t len, uint8_t *crc);
+void     desfire_crc32_append (uint8_t *data, const size_t len);
+size_t     key_block_size (const MifareDESFireKey key);
+size_t     padded_data_length (const size_t nbytes, const size_t block_size);
+size_t     maced_data_length (const MifareDESFireKey key, const size_t nbytes);
+size_t     enciphered_data_length (const FreefareTag tag, const size_t nbytes, int communication_settings);
 
-void		 cmac_generate_subkeys (MifareDESFireKey key);
-void		 cmac (const MifareDESFireKey key, uint8_t *ivect, const uint8_t *data, size_t len, uint8_t *cmac);
-void		*assert_crypto_buffer_size (FreefareTag tag, size_t nbytes);
+void     cmac_generate_subkeys (MifareDESFireKey key);
+void     cmac (const MifareDESFireKey key, uint8_t *ivect, const uint8_t *data, size_t len, uint8_t *cmac);
+void    *assert_crypto_buffer_size (FreefareTag tag, size_t nbytes);
 
 #define MIFARE_ULTRALIGHT_PAGE_COUNT  0x10
 #define MIFARE_ULTRALIGHT_C_PAGE_COUNT 0x30
@@ -249,11 +249,11 @@ struct freefare_tag {
         } nti;
     } info;
 #endif
-    SCARDCONTEXT 	hContext;
-    SCARDHANDLE		hCard;
-    SCARD_IO_REQUEST	pioSendPci;
-    LONG		lastPCSCerror;
-    char*		szReader;
+    SCARDCONTEXT  hContext;
+    SCARDHANDLE   hCard;
+    SCARD_IO_REQUEST  pioSendPci;
+    LONG    lastPCSCerror;
+    char*   szReader;
 #endif
     // End of PCSC things
     const struct supported_tag *tag_info;
@@ -262,21 +262,21 @@ struct freefare_tag {
 
 #define FILL_SZREADER(tag, szRd) \
     do { \
-	tag->szReader = (char *)malloc(strlen(szRd) * sizeof(char) + 1); \
-	if(NULL == tag->szReader) \
-	{ \
-	     fprintf(stderr, "malloc failed !! (in freefare_get_tags_pcsc)\n"); \
-	} \
-	strcpy(tag->szReader, (const char *)szRd); \
+  tag->szReader = (char *)malloc(strlen(szRd) * sizeof(char) + 1); \
+  if(NULL == tag->szReader) \
+  { \
+       fprintf(stderr, "malloc failed !! (in freefare_get_tags_pcsc)\n"); \
+  } \
+  strcpy(tag->szReader, (const char *)szRd); \
     } while(0) 
 
 #define FREE_SZREADER(szRd) \
     do { \
-	if(NULL != szRd) \
-	{ \
-    	    free(szRd); \
-	    szRd = NULL; \
-	} \
+  if(NULL != szRd) \
+  { \
+          free(szRd); \
+      szRd = NULL; \
+  } \
     } while (0)
 
 
@@ -306,10 +306,10 @@ struct mifare_desfire_aid {
 };
 
 enum mifare_desfire_key_type {
-	T_DES,
-	T_3DES,
-	T_3K3DES,
-	T_AES
+  T_DES,
+  T_3DES,
+  T_3K3DES,
+  T_AES
 };
 
 struct mifare_desfire_key {
@@ -344,7 +344,7 @@ struct mifare_desfire_tag {
 };
 
 MifareDESFireKey mifare_desfire_session_key_new (const uint8_t rnda[], const uint8_t rndb[], MifareDESFireKey authentication_key);
-const char	*mifare_desfire_error_lookup (uint8_t error);
+const char  *mifare_desfire_error_lookup (uint8_t error);
 
 struct mifare_ultralight_tag {
     struct freefare_tag __tag;
@@ -421,6 +421,7 @@ struct mifare_ultralight_tag {
     size_t __##buffer_name##_size = size; \
     size_t __##buffer_name##_n = 0; \
     uint8_t *buffer_name = (uint8_t *)malloc(sizeof(uint8_t)*size)
+
 #define BUFFER_FREE(buffer_name) \
     free(buffer_name)
 #else
@@ -428,6 +429,7 @@ struct mifare_ultralight_tag {
     size_t __##buffer_name##_size = size; \
     size_t __##buffer_name##_n = 0; \
     uint8_t buffer_name[size];
+
 #define BUFFER_FREE(buffer_name) \
     (void)(__##buffer_name##_size); \
     (void)(__##buffer_name##_n); \
@@ -455,7 +457,7 @@ struct mifare_ultralight_tag {
  */
 #define BUFFER_APPEND(buffer_name, data) \
     do { \
-	buffer_name[__##buffer_name##_n++] = data; \
+        buffer_name[__##buffer_name##_n++] = data; \
     } while (0)
 
 /*
@@ -463,10 +465,10 @@ struct mifare_ultralight_tag {
  */
 #define BUFFER_APPEND_BYTES(buffer_name, data, size) \
     do { \
-	size_t __n = 0; \
-	while (__n < size) { \
-	    buffer_name[__##buffer_name##_n++] = ((uint8_t *)data)[__n++]; \
-	} \
+        size_t __n = 0; \
+        while (__n < size) { \
+            buffer_name[__##buffer_name##_n++] = ((uint8_t *)data)[__n++]; \
+        } \
     } while (0)
 
 /*
@@ -481,17 +483,17 @@ struct mifare_ultralight_tag {
 #if defined(_BYTE_ORDER) && (_BYTE_ORDER != _LITTLE_ENDIAN)
 #define BUFFER_APPEND_LE(buffer, data, data_size, field_size) \
     do { \
-	size_t __data_size = data_size; \
-	size_t __field_size = field_size; \
-	while (__field_size--, __data_size--) { \
-	    buffer[__##buffer##_n++] = ((uint8_t *)&data)[__field_size]; \
-	} \
+        size_t __data_size = data_size; \
+        size_t __field_size = field_size; \
+        while (__field_size--, __data_size--) { \
+            buffer[__##buffer##_n++] = ((uint8_t *)&data)[__field_size]; \
+        } \
     } while (0)
 #else
 #define BUFFER_APPEND_LE(buffer, data, data_size, field_size) \
     do { \
-	memcpy (buffer + __##buffer##_n, &data, data_size); \
-	__##buffer##_n += data_size; \
+        memcpy (buffer + __##buffer##_n, &data, data_size); \
+        __##buffer##_n += data_size; \
     } while (0)
 #endif
 
