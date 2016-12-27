@@ -1,6 +1,6 @@
 {
   "name": "libfreefare-pcsc",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "This package contains a npm build and linkable version of libfreefare",
   "main": "echo ./configure && make && make install",
   "scripts": {
