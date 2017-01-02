@@ -207,6 +207,9 @@ static ssize_t   read_data (FreefareTag tag, uint8_t command, uint8_t file_no, o
         res[__##res##_n-2] = __res[__##res##_n-1]; \
         __##res##_n--; \
         if ((1 == __##res##_n) && (ADDITIONAL_FRAME != res[__##res##_n-1]) && (OPERATION_OK != res[__##res##_n-1])) { \
+            if (res[0] == AUTHENTICATION_ERROR) { \
+                errno = EACCES; \
+            } \
             return MIFARE_DESFIRE (tag)->last_picc_error = res[0], -1; \
         } \
         memcpy (res, __res, __##res##_n - 1); \
@@ -243,6 +246,9 @@ static ssize_t   read_data (FreefareTag tag, uint8_t command, uint8_t file_no, o
         res[__##res##_n-2] = __res[__##res##_n-1]; \
         __##res##_n--; \
         if ((1 == __##res##_n) && (ADDITIONAL_FRAME != res[__##res##_n-1]) && (OPERATION_OK != res[__##res##_n-1])) { \
+            if (res[0] == AUTHENTICATION_ERROR) { \
+                errno = EACCES; \
+            } \
             return MIFARE_DESFIRE (tag)->last_picc_error = res[0], -1; \
         } \
         memcpy (res, __res, __##res##_n - 1); \
@@ -283,6 +289,9 @@ static ssize_t   read_data (FreefareTag tag, uint8_t command, uint8_t file_no, o
         res[__##res##_n-2] = __res[__##res##_n-1]; \
         __##res##_n--; \
         if ((1 == __##res##_n) && (ADDITIONAL_FRAME != res[__##res##_n-1]) && (OPERATION_OK != res[__##res##_n-1])) { \
+            if (res[0] == AUTHENTICATION_ERROR) { \
+                errno = EACCES; \
+            } \
             return MIFARE_DESFIRE (tag)->last_picc_error = res[0], -1; \
         } \
         memcpy (res, __res, __##res##_n - 1); \
@@ -512,6 +521,10 @@ authenticate (FreefareTag tag, uint8_t cmd, uint8_t key_no, MifareDESFireKey key
     DESFIRE_TRANSCEIVE (tag, cmd1, res);
 
     size_t key_length = __res_n - 1;
+    if(!key_length) {
+        errno = EACCES;
+        return -1;
+    }
 
     uint8_t PICC_E_RndB[16];
     memcpy (PICC_E_RndB, res, key_length);
@@ -548,7 +561,7 @@ authenticate (FreefareTag tag, uint8_t cmd, uint8_t key_no, MifareDESFireKey key
     mifare_cypher_blocks_chained (tag, key, MIFARE_DESFIRE (tag)->ivect, PICC_RndA_s, key_length, MCD_RECEIVE, MCO_DECYPHER);
 
 #ifdef _WIN32
-    uint8_t PCD_RndA_s[16];
+    uint8_t PCD_RndA_s[32];
 #else
     uint8_t PCD_RndA_s[key_length];
 #endif
