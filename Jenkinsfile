@@ -6,9 +6,9 @@ stage("Build") {
       echo 'Checkout SCM'
       checkout scm
       echo 'Build Debug via NPM'
-      npm install --debug
+      sh 'npm install --debug'
       echo 'Build Release via NPM'
-      npm install
+      sh 'npm install'
       archiveArtifacts artifacts: 'build/**/libfreefare_pcsc.a', fingerprint: true
     }
   }, windows: {
@@ -18,9 +18,9 @@ stage("Build") {
       echo 'Checkout SCM'
       checkout scm
       echo 'Build Debug via NPM'
-      npm install --debug
+      sh 'npm install --debug'
       echo 'Build Release via NPM'
-      npm install
+      sh 'npm install'
       archiveArtifacts artifacts: 'build/**/libfreefare_pcsc.a', fingerprint: true
     }
   }, macos: {
@@ -30,9 +30,9 @@ stage("Build") {
       echo 'Checkout SCM'
       checkout scm
       echo 'Build Debug via NPM'
-      npm install --debug
+      sh 'npm install --debug'
       echo 'Build Release via NPM'
-      npm install
+      sh 'npm install'
       archiveArtifacts artifacts: 'build/**/libfreefare_pcsc.a', fingerprint: true
     }
   }
