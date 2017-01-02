@@ -1,30 +1,39 @@
 stage("Build") {
   parallel linux: {
-    echo 'Cleanup Workspace'
-    deleteDir()
-    echo 'Checkout SCM'
-    checkout scm
-    echo 'Build Debug via NPM'
-    npm install --debug
-    echo 'Build Release via NPM'
-    npm install
+    node('ArchLinux') {
+      echo 'Cleanup Workspace'
+      deleteDir()
+      echo 'Checkout SCM'
+      checkout scm
+      echo 'Build Debug via NPM'
+      npm install --debug
+      echo 'Build Release via NPM'
+      npm install
+      archiveArtifacts artifacts: 'build/**/libfreefare_pcsc.a', fingerprint: true
+    }
   }, windows: {
-    echo 'Cleanup Workspace'
-    deleteDir()
-    echo 'Checkout SCM'
-    checkout scm
-    echo 'Build Debug via NPM'
-    npm install --debug
-    echo 'Build Release via NPM'
-    npm install
+    node('Windows-7-Dev') {
+      echo 'Cleanup Workspace'
+      deleteDir()
+      echo 'Checkout SCM'
+      checkout scm
+      echo 'Build Debug via NPM'
+      npm install --debug
+      echo 'Build Release via NPM'
+      npm install
+      archiveArtifacts artifacts: 'build/**/libfreefare_pcsc.a', fingerprint: true
+    }
   }, macos: {
-    echo 'Cleanup Workspace'
-    deleteDir()
-    echo 'Checkout SCM'
-    checkout scm
-    echo 'Build Debug via NPM'
-    npm install --debug
-    echo 'Build Release via NPM'
-    npm install
+    node('Yosemite-Dev') {
+      echo 'Cleanup Workspace'
+      deleteDir()
+      echo 'Checkout SCM'
+      checkout scm
+      echo 'Build Debug via NPM'
+      npm install --debug
+      echo 'Build Release via NPM'
+      npm install
+      archiveArtifacts artifacts: 'build/**/libfreefare_pcsc.a', fingerprint: true
+    }
   }
 }
