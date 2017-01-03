@@ -13,11 +13,9 @@ stage("Build") {
           export VER=$(basename ${node})
           for type in "Debug" "Release" ; do
             if [ "$VER" = "v0.10.24" ] ; then
-              ARGS="--python /usr/bin/python2"
-            else
-              ARGS=""
+              export PYTHON=python2
             fi
-            npm install --${type,,} ${ARGS}
+            npm install --${type,,}
             mkdir -p dist/linux/x64/${VER}/${type,,} || true
             cp -r build/${type}/libfreefare_pcsc.a dist/linux/x64/${VER}/${type,,}/
           done
