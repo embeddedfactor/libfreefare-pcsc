@@ -1,3 +1,4 @@
+#!groovy
 stage("Build") {
   //parallel linux: {
     node('ArchLinux') {
@@ -29,7 +30,7 @@ stage("Build") {
       sh 'npm install --debug'
       echo 'Build Release via NPM'
       sh 'npm install'
-      archiveArtifacts artifacts: 'build/**/libfreefare_pcsc.a', fingerprint: true
+      archiveArtifacts artifacts: 'build/** /libfreefare_pcsc.a', fingerprint: true
     }
   }, macos: {
     node('Yosemite-Dev') {
@@ -41,7 +42,7 @@ stage("Build") {
       sh 'npm install --debug'
       echo 'Build Release via NPM'
       sh 'npm install'
-      archiveArtifacts artifacts: 'build/**/libfreefare_pcsc.a', fingerprint: true
+      archiveArtifacts artifacts: 'build/** /libfreefare_pcsc.a', fingerprint: true
     }
   }*/
 }
