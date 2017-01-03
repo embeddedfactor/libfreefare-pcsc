@@ -42,7 +42,7 @@ stage("Build") {
             #fi
             npm install --${type,,}
             mkdir -p dist/win/x64/${VER}/${type,,} || true
-            cp -r build/${type}/libfreefare_pcsc.a dist/win/x64/${VER}/${type,,}/
+            cp -r build/${type}/libfreefare_pcsc.lib dist/win/x64/${VER}/${type,,}/
           done
         done
       '''
@@ -61,13 +61,13 @@ stage("Build") {
         for node in /opt/nodejs/x64/* ; do
           export PATH="${node}/bin:${OLDPATH}"
           export VER=$(basename ${node})
-          for type in "Debug" "Release" ; do
+          for type in "debug" "release" ; do
             #if [ "$VER" = "v0.10.24" ] ; then
             #  export PYTHON=python2
             #fi
-            npm install --${type,,}
-            mkdir -p dist/darwin/x64/${VER}/${type,,} || true
-            cp -r build/${type}/libfreefare_pcsc.a dist/darwin/x64/${VER}/${type,,}/
+            npm install --${type}
+            mkdir -p dist/darwin/x64/${VER}/${type} || true
+            cp -r build/${type}/libfreefare_pcsc.a dist/darwin/x64/${VER}/${type}/
           done
         done
       '''
