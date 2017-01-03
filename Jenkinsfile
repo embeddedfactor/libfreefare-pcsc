@@ -12,10 +12,15 @@ stage("Build") {
           export PATH="${node}/bin:${OLDPATH}"
           export VER=$(basename ${node})
           for type in "Debug" "Release" ; do
-            npm install --${type,,}
+            if [ "$VER" = "v0.10.24" ] ; then
+              ARGS="--python /usr/bin/python2"
+            else
+              ARGS=""
+            fi
+            npm install --${type,,} ${ARGS}
             mkdir -p dist/linux/x64/${VER}/${type,,} || true
+            cp -r build/${type}/libfreefare_pcsc.a dist/linux/x64/${VER}/${type,,}/
           done
-          cp -r build/${type}/libfreefare_pcsc.a dist/linux/x64/${VER}/${type,,}/
         done
       '''
       archiveArtifacts artifacts: 'dist/**', fingerprint: true
