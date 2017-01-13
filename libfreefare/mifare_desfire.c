@@ -286,7 +286,7 @@ static ssize_t   read_data (FreefareTag tag, uint8_t command, uint8_t file_no, o
         __##res##_n = _res; \
         DEBUG_XFER (__res, __##res##_n, "<=== "); \
         res[__##res##_n-2] = __res[__##res##_n-1]; \
-        if (((1 == __##res##_n) && (ADDITIONAL_FRAME != res[__##res##_n-1]) && (OPERATION_OK != res[__##res##_n-1]))||(__##res##_n-1>MAX_RAPDU_SIZE)) { \
+        if (((1 == __##res##_n) && (ADDITIONAL_FRAME != res[__##res##_n-1]) && (OPERATION_OK != res[__##res##_n-1]))||(__##res##_n>MAX_RAPDU_SIZE)) { \
             if (res[0] == AUTHENTICATION_ERROR) { \
                 errno = EACCES; \
             } \
