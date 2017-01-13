@@ -262,7 +262,7 @@ static ssize_t   read_data (FreefareTag tag, uint8_t command, uint8_t file_no, o
         static uint8_t __res[MAX_RAPDU_SIZE + 1]; \
         size_t __len = 5; \
         errno = 0; \
-        if (msg==0) { \
+        if (msg==0||msg_len>MAX_CAPDU_SIZE) { \
             return errno = EINVAL; /*, -1 // TODO: Does the -1 contribute anyting? */; \
         } \
         __msg[1] = msg[0]; \
@@ -277,7 +277,6 @@ static ssize_t   read_data (FreefareTag tag, uint8_t command, uint8_t file_no, o
         MIFARE_DESFIRE (tag)->last_pcd_error = OPERATION_OK; \
         DEBUG_XFER (__msg, __len, "===> "); \
         int _res; \
-        /* pcsc branch */ \
         /* SCARD_IO_REQUEST __pcsc_rcv_pci; // TODO: Unused?? */\
         DWORD __pcsc_recv_len = __##res##_size + 1; \
         if (SCARD_S_SUCCESS != SCardTransmit(tag->hCard, &tag->pioSendPci, __msg, __len, NULL/*&__pcsc_rcv_pci*/, __res, &__pcsc_recv_len)) { \
@@ -287,8 +286,7 @@ static ssize_t   read_data (FreefareTag tag, uint8_t command, uint8_t file_no, o
         __##res##_n = _res; \
         DEBUG_XFER (__res, __##res##_n, "<=== "); \
         res[__##res##_n-2] = __res[__##res##_n-1]; \
-        __##res##_n--; \
-        if ((1 == __##res##_n) && (ADDITIONAL_FRAME != res[__##res##_n-1]) && (OPERATION_OK != res[__##res##_n-1])) { \
+        if (((1 == __##res##_n) && (ADDITIONAL_FRAME != res[__##res##_n-1]) && (OPERATION_OK != res[__##res##_n-1]))||(__##res##_n-1>MAX_RAPDU_SIZE)) { \
             if (res[0] == AUTHENTICATION_ERROR) { \
                 errno = EACCES; \
             } \
