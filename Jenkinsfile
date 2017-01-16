@@ -104,16 +104,6 @@ stage('Build electron') {
   parallel electron_builds
 }
 
-stage('Lint') {
-  node('ArchLinux') {
-    dir(project) {
-      sh 'oclint-json-compilation-database'
-      step([$class: 'PmdPublisher', canComputeNew: false, canRunOnFailed: true, defaultEncoding: '', healthy: '', pattern: '**/build/oclint.xml', unHealthy: ''])
-      step([$class: 'WarningsPublisher', canComputeNew: false, canRunOnFailed: true, consoleParsers: [[parserName: 'GNU Make + GNU C Compiler (gcc)']], defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', unHealthy: ''])
-    }
-  }
-}
-
 stage('Bundle') {
   node('ArchLinux') {
     properties([pipelineTriggers([[$class: 'GitHubPushTrigger']])])
@@ -123,9 +113,22 @@ stage('Bundle') {
       unstash 'electron_win32'
       unstash 'electron_darwin'
       sh 'cp binding.gyp binding.gyp.done'
+      sh 'oclint-json-compilation-database'
     }
     sh "tar --exclude='${distexcludes.join("' --exclude='")}' -czf ${project}-${BUILD_ID}.dist.tar.gz ${project}"
     sh "tar --exclude='${minexcludes.join("' --exclude='")}' -czf ${project}-${BUILD_ID}.dist.min.tar.gz ${project}"
     archiveArtifacts artifacts: "${project}-*.tar.gz", fingerprint: true
+    stash includes: '**', name: 'all'
   }
 }
+
+stage('Linter') {
+  node('master') {
+    unstash 'all'
+    dir(project) {
+      step([$class: 'PmdPublisher', canComputeNew: false, canRunOnFailed: true, defaultEncoding: '', healthy: '', pattern: '**/build/oclint.xml', unHealthy: ''])
+      step([$class: 'WarningsPublisher', canComputeNew: false, canRunOnFailed: true, consoleParsers: [[parserName: 'GNU Make + GNU C Compiler (gcc)']], defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', unHealthy: ''])
+    }
+  }
+}
+
