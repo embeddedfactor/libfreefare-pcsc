@@ -4,7 +4,7 @@ def project = "libfreefare-pcsc"
 def binary = "libfreefare_pcsc.a"
 
 def platforms = [
-  [platform: 'linux', host: 'ArchLinux', python: 'python2' ],
+  [platform: 'linux', host: 'ArchLinux', python: 'python2', bear: 'bear'],
   [platform: 'win32', host: 'Windows-7-Dev'],
   [platform: 'darwin', host: 'Yosemite-Dev']
 ]
@@ -30,6 +30,7 @@ for (int i = 0; i < platforms.size(); i++) {
   def platform = platforms[i].get('platform')
   def host = platforms[i].get('host')
   def python = platforms[i].get('python', 'python')
+  def bear = platforms[i].get('bear', '')
   nodejs_builds[platform] = {
     node(host) {
       echo('Cleanup Workspace')
@@ -42,6 +43,7 @@ for (int i = 0; i < platforms.size(); i++) {
         env.PYTHON = python
         env.PLATFORM = platform
         env.BINARY = binary
+        env.BEAR = bear
         sh '''
           export OLDPATH="$PATH"
           for arch in x64 ia32 ; do
@@ -51,7 +53,7 @@ for (int i = 0; i < platforms.size(); i++) {
               fi
               export PATH="${node}/bin:${node}:${OLDPATH}"
               export VER=$(basename ${node})
-              V=1 bear npm install --release
+              V=1 ${BEAR} npm install --release
               mkdir -p dist/node/${VER}/${PLATFORM}/${arch}/ || true
               cp -r build/Release/${BINARY} dist/node/${VER}/${PLATFORM}/${arch}/
             done
@@ -82,7 +84,7 @@ for (int i = 0; i < platforms.size(); i++) {
               export npm_config_target=${ELECTRON_VER}
               export npm_config_arch=${arch}
               export npm_config_target_arch=${arch}
-              V=1 HOME=~/.electron-gyp bear npm install --release
+              HOME=~/.electron-gyp npm install --release
               mkdir -p dist/electron/${VER}/${PLATFORM}/${arch}/ || true
               cp -r build/Release/${BINARY} dist/electron/${VER}/${PLATFORM}/${arch}/
             done
