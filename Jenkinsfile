@@ -85,8 +85,8 @@ for (int i = 0; i < platforms.size(); i++) {
               export npm_config_arch=${arch}
               export npm_config_target_arch=${arch}
               HOME=~/.electron-gyp npm install --release
-              mkdir -p dist/electron/${VER}/${PLATFORM}/${arch}/ || true
-              cp -r build/Release/${BINARY} dist/electron/${VER}/${PLATFORM}/${arch}/
+              mkdir -p dist/electron/${ELECTRON_VER}/${PLATFORM}/${arch}/ || true
+              cp -r build/Release/${BINARY} dist/electron/${ELECTRON_VER}/${PLATFORM}/${arch}/
             done
           done
         '''
