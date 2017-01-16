@@ -35,7 +35,7 @@ for (int i = 0; i < platforms.size(); i++) {
       echo('Cleanup Workspace')
       deleteDir()
 
-      sh "mkdir -p ${project}
+      sh "mkdir -p ${project}"
       dir(project) {
         echo 'Checkout SCM'
         checkout scm
