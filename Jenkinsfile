@@ -108,7 +108,7 @@ stage('Lint') {
   node('ArchLinux') {
     dir(project) {
       sh 'oclint-json-compilation-database'
-      step([$class: 'PmdPublisher', canComputeNew: false, canRunOnFailed: true, defaultEncoding: '', healthy: '', pattern: 'oclint.xml', unHealthy: ''])
+      step([$class: 'PmdPublisher', canComputeNew: false, canRunOnFailed: true, defaultEncoding: '', healthy: '', pattern: '**/build/oclint.xml', unHealthy: ''])
       step([$class: 'WarningsPublisher', canComputeNew: false, canRunOnFailed: true, consoleParsers: [[parserName: 'GNU Make + GNU C Compiler (gcc)']], defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', unHealthy: ''])
     }
   }
