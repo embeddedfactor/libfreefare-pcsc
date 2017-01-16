@@ -1,7 +1,7 @@
 #!groovy
 
 def project = "libfreefare-pcsc"
-def binary = "libfreefare_pcsc.a"
+def binary = "libfreefare_pcsc.*"
 
 def platforms = [
   [platform: 'linux', host: 'ArchLinux', python: 'python2', bear: 'bear'],
