@@ -1,79 +1,128 @@
 #!groovy
-stage("Build") {
-  parallel linux: {
-    node('ArchLinux') {
-      echo 'Cleanup Workspace'
+
+def project = "libfreefare-pcsc"
+def binary = "libfreefare_pcsc.a"
+
+def platforms = [
+  [platform: 'linux', host: 'ArchLinux', python: 'python2' ],
+  [platform: 'win32', host: 'Windows-7-Dev'],
+  [platform: 'darwin', host: 'Yosemite-Dev']
+]
+
+def distexcludes = [
+  'node-mifare/binding.gyp',
+  'node-mifare/.git',
+  'node-mifare/node_modules',
+  'node-mifare/build'
+]
+
+def minexcludes = distexcludes + [
+  'node-mifare/src',
+  'node-mifare/test',
+  'node-mifare/docs',
+  'node-mifare/Jenkinsfile'
+]
+
+def nodejs_builds = [:]
+def electron_builds = [:]
+
+for (int i = 0; i < platforms.size(); i++) {
+  def platform = platforms[i].get('platform')
+  def host = platforms[i].get('host')
+  def python = platforms[i].get('python', 'python')
+  nodejs_builds[platform] = {
+    node(host) {
+      echo('Cleanup Workspace')
       deleteDir()
-      echo 'Checkout SCM'
-      checkout scm
-      sh '''
-        export OLDPATH="$PATH"
-        for node in /opt/nodejs/x64/* ; do
-          export PATH="${node}/bin:${OLDPATH}"
-          export VER=$(basename ${node})
-          for type in "Debug" "Release" ; do
-            if [ "$VER" = "v0.10.24" ] ; then
-              export PYTHON=python2
+
+      sh "mkdir -p ${project}
+      dir(project) {
+        echo 'Checkout SCM'
+        checkout scm
+        env.PYTHON = python
+        env.PLATFORM = platform
+        env.BINARY = binary
+        sh '''
+          export OLDPATH="$PATH"
+          for arch in x64 ia32 ; do
+            for node in /c/nodejs/${arch}/* /opt/nodejs/${arch}/* ; do
+              if [ ! -d ${node} ] ; then
+                continue
+              fi
+              export PATH="${node}/bin:${node}:${OLDPATH}"
+              export VER=$(basename ${node})
+              V=1 bear npm install --release
+              mkdir -p dist/node/${VER}/${PLATFORM}/${arch}/ || true
+              cp -r build/Release/${BINARY} dist/node/${VER}/${PLATFORM}/${arch}/
+            done
+          done
+        '''
+        stash includes: 'dist/**', name: "nodejs_${platform}"
+      }
+    }
+  }
+  electron_builds[platform] = {
+    node(host) {
+      dir(project) {
+        env.PYTHON = python
+        env.PLATFORM = platform
+        env.BINARY = binary
+        sh '''
+          export npm_config_disturl=https://atom.io/download/electron
+          export npm_config_runtime=electron
+          export npm_config_build_from_source=true
+          export OLDPATH="$PATH"
+          for arch in x64 ; do
+            export NODEJS_VER=$(ls -1d /c/nodejs/${arch}/*/ /opt/nodejs/${arch}/*/ 2>/dev/null | tail -n1)
+            if [ ! -d ${NODEJS_VER} ] ; then
+              continue
             fi
-            npm install --${type,,}
-            mkdir -p dist/linux/x64/${VER}/${type,,} || true
-            cp -r build/${type}/libfreefare_pcsc.a dist/linux/x64/${VER}/${type,,}/
+            export PATH="${NODEJS_VER}/bin:${NODEJS_VER}:${OLDPATH}"
+            for ELECTRON_VER in "1.4.14" ; do
+              export npm_config_target=${ELECTRON_VER}
+              export npm_config_arch=${arch}
+              export npm_config_target_arch=${arch}
+              V=1 HOME=~/.electron-gyp bear npm install --release
+              mkdir -p dist/electron/${VER}/${PLATFORM}/${arch}/ || true
+              cp -r build/Release/${BINARY} dist/electron/${VER}/${PLATFORM}/${arch}/
+            done
           done
-        done
-      '''
-      dir('dist') {
-        archiveArtifacts artifacts: '**', fingerprint: true
+        '''
+        stash includes: 'dist/**', name: "electron_${platform}"
       }
     }
-  }, windows: {
-    node('Windows-7-Dev') {
-      echo 'Cleanup Workspace'
-      deleteDir()
-      echo 'Checkout SCM'
-      checkout scm
-      sh '''
-        export OLDPATH="$PATH"
-        for node in /c/nodejs/x64/* ; do
-          export PATH="${node}/bin:${OLDPATH}"
-          export VER=$(basename ${node})
-          for type in "Debug" "Release" ; do
-            #if [ "$VER" = "v0.10.24" ] ; then
-            #  export PYTHON=python2
-            #fi
-            npm install --${type,,}
-            mkdir -p dist/win/x64/${VER}/${type,,} || true
-            cp -r build/${type}/libfreefare_pcsc.lib dist/win/x64/${VER}/${type,,}/
-          done
-        done
-      '''
-      dir('dist') {
-        archiveArtifacts artifacts: '**', fingerprint: true
-      }
+  }
+}
+
+stage('Build nodejs') {
+  parallel nodejs_builds
+}
+
+stage('Build electron') {
+  parallel electron_builds
+}
+
+stage('Lint') {
+  node('ArchLinux') {
+    dir(project) {
+      sh 'oclint-json-compilation-database -- -report-type pmd -o ../oclint.html'
     }
-  }, macos: {
-    node('Yosemite-Dev') {
-      echo 'Cleanup Workspace'
-      deleteDir()
-      echo 'Checkout SCM'
-      checkout scm
-      sh '''
-        export OLDPATH="$PATH"
-        for node in /opt/nodejs/x64/* ; do
-          export PATH="${node}/bin:${OLDPATH}"
-          export VER=$(basename ${node})
-          for type in "debug" "release" ; do
-            #if [ "$VER" = "v0.10.24" ] ; then
-            #  export PYTHON=python2
-            #fi
-            npm install --${type}
-            mkdir -p dist/darwin/x64/${VER}/${type} || true
-            cp -r build/${type}/libfreefare_pcsc.a dist/darwin/x64/${VER}/${type}/
-          done
-        done
-      '''
-      dir('dist') {
-        archiveArtifacts artifacts: '**', fingerprint: true
-      }
+  }
+}
+
+stage('Bundle') {
+  node('ArchLinux') {
+    properties([pipelineTriggers([[$class: 'GitHubPushTrigger']])])
+    dir(project) {
+      unstash 'nodejs_win32'
+      unstash 'nodejs_darwin'
+      unstash 'electron_win32'
+      unstash 'electron_darwin'
+      sh 'cp binding.gyp binding.gyp.done'
     }
+    sh "tar --exclude='${distexcludes.join("' --exclude='")}' -czf ${project}-${BUILD_ID}.dist.tar.gz ${project}"
+    sh "tar --exclude='${minexcludes.join("' --exclude='")}' -czf ${project}-${BUILD_ID}.dist.min.tar.gz ${project}"
+    archiveArtifacts artifacts: "${project}-*.tar.gz", fingerprint: true
+    //step([$class: 'WarningsPublisher', canComputeNew: false, canResolveRelativePaths: false, canRunOnFailed: true, defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', unHealthy: ''])
   }
 }
