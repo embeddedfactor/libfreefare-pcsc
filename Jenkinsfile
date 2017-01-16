@@ -10,17 +10,17 @@ def platforms = [
 ]
 
 def distexcludes = [
-  'node-mifare/binding.gyp',
-  'node-mifare/.git',
-  'node-mifare/node_modules',
-  'node-mifare/build'
+  "${project}/binding.gyp",
+  "${project}/.git",
+  "${project}/node_modules",
+  "${project}/build"
 ]
 
 def minexcludes = distexcludes + [
-  'node-mifare/src',
-  'node-mifare/test',
-  'node-mifare/docs',
-  'node-mifare/Jenkinsfile'
+  "${project}/src",
+  "${project}/test",
+  "${project}/docs",
+  "${project}/Jenkinsfile"
 ]
 
 def nodejs_builds = [:]
@@ -106,6 +106,8 @@ stage('Lint') {
   node('ArchLinux') {
     dir(project) {
       sh 'oclint-json-compilation-database -- -report-type pmd -o ../oclint.html'
+      step([$class: 'PmdPublisher', canComputeNew: false, canRunOnFailed: true, defaultEncoding: '', healthy: '', pattern: '../oclint.xml', unHealthy: ''])
+      step([$class: 'WarningsPublisher', canComputeNew: false, canRunOnFailed: true, consoleParsers: [[parserName: 'GNU Make + GNU C Compiler (gcc)']], defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', unHealthy: ''])
     }
   }
 }
@@ -123,6 +125,5 @@ stage('Bundle') {
     sh "tar --exclude='${distexcludes.join("' --exclude='")}' -czf ${project}-${BUILD_ID}.dist.tar.gz ${project}"
     sh "tar --exclude='${minexcludes.join("' --exclude='")}' -czf ${project}-${BUILD_ID}.dist.min.tar.gz ${project}"
     archiveArtifacts artifacts: "${project}-*.tar.gz", fingerprint: true
-    //step([$class: 'WarningsPublisher', canComputeNew: false, canResolveRelativePaths: false, canRunOnFailed: true, defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', unHealthy: ''])
   }
 }
