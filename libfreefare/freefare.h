@@ -349,6 +349,7 @@ struct mifare_desfire_file_settings {
 };
 
 int		 mifare_desfire_connect (FreefareTag tag);
+int      mifare_desfire_reconnect (FreefareTag tag);
 int		 mifare_desfire_disconnect (FreefareTag tag);
 
 int		 mifare_desfire_authenticate (FreefareTag tag, uint8_t key_no, MifareDESFireKey key);

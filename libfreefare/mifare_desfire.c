@@ -458,6 +458,54 @@ mifare_desfire_connect (FreefareTag tag)
 }
 
 /*
+ * MIFARE card communication preparation functions
+ *
+ * The following functions send NFC commands to the initiator to prepare
+ * communication with a MIFARE card, and perform required cleannups after using
+ * the target.
+ */
+
+/*
+ * Establish connection to the provided tag.
+ */
+int
+mifare_desfire_reconnect (FreefareTag tag)
+{
+    ASSERT_INACTIVE (tag);
+    ASSERT_MIFARE_DESFIRE (tag);
+
+#ifdef USE_PCSC
+    {
+        DWORD dwActiveProtocol;
+
+        tag->lastPCSCerror = SCardReconnect(tag->hCard, SCARD_SHARE_EXCLUSIVE,
+                  SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1, SCARD_RESET_CARD, &dwActiveProtocol);
+        if(SCARD_S_SUCCESS != tag->lastPCSCerror) {
+            errno = EIO;
+            return -1;
+        }
+
+        switch(dwActiveProtocol) {
+            case SCARD_PROTOCOL_T0: tag->pioSendPci = *SCARD_PCI_T0;
+                 break;
+            case SCARD_PROTOCOL_T1: tag->pioSendPci = *SCARD_PCI_T1;
+                 break;
+        }
+    }
+#endif
+
+    tag->active = 1;
+    free (MIFARE_DESFIRE (tag)->session_key);
+    MIFARE_DESFIRE (tag)->session_key = NULL;
+    MIFARE_DESFIRE (tag)->last_picc_error = OPERATION_OK;
+    MIFARE_DESFIRE (tag)->last_pcd_error = OPERATION_OK;
+    MIFARE_DESFIRE (tag)->authenticated_key_no = NOT_YET_AUTHENTICATED;
+    MIFARE_DESFIRE (tag)->selected_application = 0;
+
+    return 0;
+}
+
+/*
  * Terminate connection with the provided tag.
  */
 int
