@@ -457,6 +457,11 @@ bool freefare_selected_tag_is_present(nfc_device *device)
 void
 freefare_free_tag (FreefareTag tag)
 {
+#ifdef USE_PCSC
+    if(tag->szReader) {
+	    FREE_SZREADER(tag->szReader);
+    }
+#endif
     if (tag) {
         switch (tag->tag_info->type) {
         case FELICA:
@@ -476,10 +481,6 @@ freefare_free_tag (FreefareTag tag)
             mifare_ultralight_tag_free (tag);
             break;
         }
-#ifdef USE_PCSC
-    if(tag->szReader)
-	    FREE_SZREADER(tag->szReader);
-#endif
     }
 }
 

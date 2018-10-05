@@ -262,21 +262,19 @@ struct freefare_tag {
 
 #define FILL_SZREADER(tag, szRd) \
     do { \
-  tag->szReader = (char *)malloc(strlen(szRd) * sizeof(char) + 1); \
-  if(NULL == tag->szReader) \
-  { \
-       fprintf(stderr, "malloc failed !! (in freefare_get_tags_pcsc)\n"); \
-  } \
-  strcpy(tag->szReader, (const char *)szRd); \
-    } while(0) 
+        tag->szReader = (char *)malloc(strlen(szRd) * sizeof(char) + 1); \
+        if (NULL == tag->szReader) { \
+            fprintf(stderr, "malloc failed !! (in freefare_get_tags_pcsc)\n"); \
+        } \
+        strcpy(tag->szReader, (const char *)szRd); \
+    } while(0)
 
 #define FREE_SZREADER(szRd) \
     do { \
-  if(NULL != szRd) \
-  { \
-          free(szRd); \
-      szRd = NULL; \
-  } \
+        if (NULL != szRd) { \
+            free(szRd); \
+            szRd = NULL; \
+        } \
     } while (0)
 
 
@@ -323,9 +321,9 @@ struct mifare_desfire_key {
     uint8_t aes_version;
 };
 
-enum mifare_desfire_tag_authentication_scheme { 
-  AS_LEGACY, 
-  AS_NEW 
+enum mifare_desfire_tag_authentication_scheme {
+  AS_LEGACY,
+  AS_NEW
 };
 struct mifare_desfire_tag {
     struct freefare_tag __tag;
@@ -370,7 +368,7 @@ struct mifare_ultralight_tag {
 #define ASSERT_MIFARE_ULTRALIGHT(tag) do { if ((tag->tag_info->type != MIFARE_ULTRALIGHT) && (! IS_MIFARE_ULTRALIGHT_C(tag))) return errno = ENODEV, -1; } while (0)
 #define ASSERT_MIFARE_ULTRALIGHT_C(tag) do { if (! IS_MIFARE_ULTRALIGHT_C(tag)) return errno = ENODEV, -1; } while (0)
 
-/* 
+/*
  * FreefareTag cast macros
  *
  * This macros are intended to provide a convenient way to cast abstract
@@ -398,7 +396,7 @@ struct mifare_ultralight_tag {
 
 /*
  * Buffer management macros.
- * 
+ *
  * The following macros ease setting-up and using buffers:
  * BUFFER_INIT (data, 5);      // data -> [ xx, xx, xx, xx, xx ]
  * BUFFER_SIZE (data);         // size -> 0
