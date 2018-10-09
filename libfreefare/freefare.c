@@ -573,6 +573,14 @@ unsigned int freefare_internal_error(FreefareTag tag) {
 
 }
 
+void freefare_clear_internal_error(FreefareTag tag) {
+    (MIFARE_DESFIRE (tag)->last_pcd_error) = 0;
+    (MIFARE_DESFIRE (tag)->last_picc_error) = 0;
+#ifdef USE_PCSC
+      tag->lastPCSCerror = 0;
+#endif
+}
+
 int
 freefare_strerror_r (FreefareTag tag, char *buffer, size_t len)
 {
