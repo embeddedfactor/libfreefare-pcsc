@@ -470,7 +470,6 @@ mifare_desfire_connect (FreefareTag tag)
 int
 mifare_desfire_reconnect (FreefareTag tag)
 {
-    ASSERT_INACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
 
 #ifdef USE_PCSC

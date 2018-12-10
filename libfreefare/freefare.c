@@ -513,7 +513,18 @@ freefare_strerror (FreefareTag tag)
     {
         if (tag->lastPCSCerror != 0){
 #ifdef _WIN32
-            return "Internal PCSC error";
+              char    wszMsgBuff[512];  // Buffer for text.
+              size_t  dwChars;  // Number of chars returned.
+              // Try to get the message from the system errors.
+              dwChars = FormatMessageA( FORMAT_MESSAGE_FROM_SYSTEM |
+                             FORMAT_MESSAGE_IGNORE_INSERTS,
+                             NULL,
+                             tag->lastPCSCerror,
+                             0,
+                             wszMsgBuff,
+                             512,
+                             NULL );
+            return wszMsgBuff;
 #else
             p = (const char*) pcsc_stringify_error(tag->lastPCSCerror);
             return p;
