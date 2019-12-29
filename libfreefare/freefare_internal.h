@@ -23,6 +23,7 @@
 #include <openssl/des.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <strings.h>
 
 /*
  * Endienness macros
@@ -411,6 +412,11 @@ struct mifare_ultralight_tag {
  * BUFFER_SIZE (data);         // size -> 5
  */
 
+#ifdef _WIN32
+#define CASE_FALLTHROUGH {}
+#else
+#define CASE_FALLTHROUGH __attribute__ ((fallthrough))
+#endif
 /*
  * Initialise a buffer named buffer_name of size bytes.
  */
@@ -419,6 +425,7 @@ struct mifare_ultralight_tag {
     size_t __##buffer_name##_size = size; \
     size_t __##buffer_name##_n = 0; \
     uint8_t *buffer_name = (uint8_t *)malloc(sizeof(uint8_t)*size)
+    bzero(buffer_name, size);
 
 #define BUFFER_FREE(buffer_name) \
     free(buffer_name)
@@ -426,7 +433,8 @@ struct mifare_ultralight_tag {
 #define BUFFER_INIT(buffer_name, size) \
     size_t __##buffer_name##_size = size; \
     size_t __##buffer_name##_n = 0; \
-    uint8_t buffer_name[size];
+    uint8_t buffer_name[size]; \
+    bzero(buffer_name, size);
 
 #define BUFFER_FREE(buffer_name) \
     (void)(__##buffer_name##_size); \

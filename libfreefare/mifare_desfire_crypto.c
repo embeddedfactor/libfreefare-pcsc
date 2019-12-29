@@ -335,6 +335,7 @@ mifare_cryto_preprocess_data (FreefareTag tag, void *data, size_t *nbytes, off_t
              */
 
             append_mac = false;
+            CASE_FALLTHROUGH;
 
         /* pass through */
         case MDCM_MACED:
@@ -469,6 +470,7 @@ mifare_cryto_postprocess_data (FreefareTag tag, void *data, ssize_t *nbytes, int
             if (AS_LEGACY == MIFARE_DESFIRE (tag)->authentication_scheme) {
                 break;
             }
+            CASE_FALLTHROUGH;
 
           /* pass through */
         case MDCM_MACED:
