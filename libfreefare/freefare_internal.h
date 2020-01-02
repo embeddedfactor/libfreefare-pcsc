@@ -424,7 +424,7 @@ struct mifare_ultralight_tag {
 #define BUFFER_INIT(buffer_name, size) \
     size_t __##buffer_name##_size = size; \
     size_t __##buffer_name##_n = 0; \
-    uint8_t *buffer_name = (uint8_t *)malloc(sizeof(uint8_t)*size) \
+    uint8_t *buffer_name = (uint8_t *)malloc(sizeof(uint8_t)*size); \
     memset(buffer_name, '\0', size);
 
 #define BUFFER_FREE(buffer_name) \
