@@ -23,7 +23,7 @@
 #include <openssl/des.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <strings.h>
+#include <string.h>
 
 /*
  * Endienness macros
@@ -425,7 +425,7 @@ struct mifare_ultralight_tag {
     size_t __##buffer_name##_size = size; \
     size_t __##buffer_name##_n = 0; \
     uint8_t *buffer_name = (uint8_t *)malloc(sizeof(uint8_t)*size)
-    bzero(buffer_name, size);
+    memset(buffer_name, '\0', size);
 
 #define BUFFER_FREE(buffer_name) \
     free(buffer_name)
@@ -434,7 +434,7 @@ struct mifare_ultralight_tag {
     size_t __##buffer_name##_size = size; \
     size_t __##buffer_name##_n = 0; \
     uint8_t buffer_name[size]; \
-    bzero(buffer_name, size);
+    memset(buffer_name, '\0', size);
 
 #define BUFFER_FREE(buffer_name) \
     (void)(__##buffer_name##_size); \
